@@ -7,21 +7,4 @@ export class AppService {
   getHello(): string {
     return 'Hello World!';
   }
-
-  getTest(id:string): User {
-    //todo error handling
-    let user = User.findById(id).then(x => {
-      if(x)
-        return user; 
-      else
-        throw exitCode;
-    });
-
-    return user;
-  }
-}
-
-@Injectable()
-export class TestService {
-
 }
