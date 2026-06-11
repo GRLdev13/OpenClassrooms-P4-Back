@@ -3,3 +3,6 @@ app/node_modules/*
 node_modules/*
 package-lock.json
 app/dist/*/*.map
+app/dist/*
+dist/
+
