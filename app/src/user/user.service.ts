@@ -1,23 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AppDataSource } from '../../data-source';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../../entities/user';
 import { UserDto } from './dtos/user.dto';
 import { UserMapper } from './user.mapper';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 @Injectable()
 export class UserService {
-  constructor(private userMapper: UserMapper) {}
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private userMapper: UserMapper,
+  ) {}
 
   async testDatabaseConnection(): Promise<{ connected: boolean; message: string }> {
     try {
-      if (!AppDataSource.isInitialized) {
-        await AppDataSource.initialize();
-      }
-      
-      const queryRunner = AppDataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.release();
-      
+      await this.userRepository.query('SELECT NOW()');
       return {
         connected: true,
         message: 'Successfully connected to the database',
@@ -31,7 +30,7 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<UserDto> {
-    const user = await User.findByName(email);
+    const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new NotFoundException(`User with email ${email} not found`);
     }
@@ -39,15 +38,19 @@ export class UserService {
   }
 
   async findById(id: string): Promise<UserDto> {
-    const user = await User.findById(id);
-    if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
+    try {
+      const user = await this.userRepository.findOne({ where: { id } });
+      if (!user) {
+        throw new NotFoundException(`User with id ${id} not found`);
+      }
+      return this.userMapper.toDto(user);
+    } catch (error) {
+      throw new NotFoundException(error);
     }
-    return this.userMapper.toDto(user);
   }
 
   async findAll(): Promise<UserDto[]> {
-    const users = await User.find();
+    const users = await this.userRepository.find();
     return this.userMapper.toDtoArray(users);
   }
 }

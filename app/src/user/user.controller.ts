@@ -7,7 +7,10 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get('health')
-  async testDatabaseConnection(): Promise<{ connected: boolean; message: string }> {
+  async testDatabaseConnection(): Promise<{
+    connected: boolean;
+    message: string;
+  }> {
     return this.userService.testDatabaseConnection();
   }
 
