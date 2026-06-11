@@ -1,24 +1,24 @@
 -- 1. Create Base Tables (Tables without foreign keys)
 CREATE TABLE Users (
-    GUID VARCHAR(255) PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
     Email VARCHAR(255) NOT NULL,
     Password VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE Tags (
-    GUID VARCHAR(255) PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
     Name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE Type (
-    GUID VARCHAR(255) PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
     Icon VARCHAR(255),
     Extension VARCHAR(255),
     IsAllowed BOOLEAN
 );
 
 CREATE TABLE File (
-    GUID VARCHAR(255) PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
     Base64 TEXT,
     URL VARCHAR(255),
     Hosting VARCHAR(255),
@@ -28,7 +28,7 @@ CREATE TABLE File (
 
 -- 2. Create Junction/Linking Tables (Tables with foreign keys)
 CREATE TABLE File_User (
-    Guid VARCHAR(255) PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
     Id_File VARCHAR(255) NOT NULL,
     Id_User VARCHAR(255) NOT NULL,
     CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(GUID),
@@ -36,7 +36,7 @@ CREATE TABLE File_User (
 );
 
 CREATE TABLE File_Tags (
-    Guid VARCHAR(255) PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
     Id_Tags VARCHAR(255) NOT NULL,
     Id_File VARCHAR(255) NOT NULL,
     CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(GUID),
@@ -44,7 +44,7 @@ CREATE TABLE File_Tags (
 );
 
 CREATE TABLE File_Type (
-    Guid VARCHAR(255) PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
     Id_Type VARCHAR(255) NOT NULL,
     Id_File VARCHAR(255) NOT NULL,
     CONSTRAINT fk_type FOREIGN KEY (Id_Type) REFERENCES Type(GUID),
