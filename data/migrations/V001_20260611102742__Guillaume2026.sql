@@ -1,24 +1,27 @@
--- 1. Create Base Tables (Tables without foreign keys)
-CREATE TABLE Users (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
+-- If we want to reset:
+-- DROP SCHEMA IF EXISTS datashare CASCADE;
+
+-- 1. Create Base Tables
+CREATE TABLE datashare.Users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     Email VARCHAR(255) NOT NULL,
     Password VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE Tags (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
+CREATE TABLE datashare.Tags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     Name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE Type (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
+CREATE TABLE datashare.Type (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     Icon VARCHAR(255),
     Extension VARCHAR(255),
     IsAllowed BOOLEAN
 );
 
-CREATE TABLE File (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
+CREATE TABLE datashare.File (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     Base64 TEXT,
     URL VARCHAR(255),
     Hosting VARCHAR(255),
@@ -26,27 +29,27 @@ CREATE TABLE File (
     Upload_Date TIMESTAMP
 );
 
--- 2. Create Junction/Linking Tables (Tables with foreign keys)
-CREATE TABLE File_User (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
-    Id_File VARCHAR(255) NOT NULL,
-    Id_User VARCHAR(255) NOT NULL,
-    CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(GUID),
-    CONSTRAINT fk_user FOREIGN KEY (Id_User) REFERENCES Users(GUID)
+-- 2. Create Junction/Linking Tables
+CREATE TABLE datashare.File_User (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    Id_File UUID NOT NULL,
+    Id_User UUID NOT NULL,
+    CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(id),
+    CONSTRAINT fk_user FOREIGN KEY (Id_User) REFERENCES Users(id)
 );
 
-CREATE TABLE File_Tags (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
-    Id_Tags VARCHAR(255) NOT NULL,
-    Id_File VARCHAR(255) NOT NULL,
-    CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(GUID),
-    CONSTRAINT fk_tags FOREIGN KEY (Id_Tags) REFERENCES Tags(GUID)
+CREATE TABLE datashare.File_Tags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    Id_Tags UUID NOT NULL,
+    Id_File UUID NOT NULL,
+    CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(id),
+    CONSTRAINT fk_tags FOREIGN KEY (Id_Tags) REFERENCES Tags(id)
 );
 
-CREATE TABLE File_Type (
-    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), PRIMARY KEY,
-    Id_Type VARCHAR(255) NOT NULL,
-    Id_File VARCHAR(255) NOT NULL,
-    CONSTRAINT fk_type FOREIGN KEY (Id_Type) REFERENCES Type(GUID),
-    CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(GUID)
+CREATE TABLE datashare.File_Type (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    Id_Type UUID NOT NULL,
+    Id_File UUID NOT NULL,
+    CONSTRAINT fk_type FOREIGN KEY (Id_Type) REFERENCES Type(id),
+    CONSTRAINT fk_file FOREIGN KEY (Id_File) REFERENCES File(id)
 );
