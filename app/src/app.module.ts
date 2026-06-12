@@ -4,6 +4,12 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { User } from '../entities/user';
+import { File } from '../entities/file';
+import { Tag } from '../entities/tag';
+import { Type } from '../entities/type';
+import { FileUser } from '../entities/file-user';
+import { FileTag } from '../entities/file-tag';
+import { FileType } from '../entities/file-type';
 import { MigrationRunner } from './database/migration.runner';
 
 @Module({
@@ -16,7 +22,7 @@ import { MigrationRunner } from './database/migration.runner';
       password: process.env.DB_PASSWORD || 'admin',
       database: process.env.DB_NAME || 'datashare',
       schema: 'datashare',
-      entities: [User],
+      entities: [User, File, Tag, Type, FileUser, FileTag, FileType],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV !== 'production',
     }),
@@ -25,7 +31,4 @@ import { MigrationRunner } from './database/migration.runner';
   controllers: [AppController],
   providers: [AppService, MigrationRunner],
 })
-export class AppModule {
-
-  
-}
+export class AppModule {}
