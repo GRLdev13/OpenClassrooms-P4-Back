@@ -1,15 +1,29 @@
-import { BaseEntity, Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  BaseEntity,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+} from 'typeorm';
+import { FileUser } from './file-user';
 
-@Entity()
+@Entity('Users')
 export class User extends BaseEntity {
-  @PrimaryGeneratedColumn()
-  id: string = '';
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-  @Column()
-  email: string = '';
+  @Column({ type: 'varchar', length: 255 })
+  email!: string;
 
-  @Column()
-  hasVerifiedEmail: boolean = false;
+  @Column({ type: 'varchar', length: 255 })
+  password!: string;
+
+  @Column({ type: 'boolean', default: false })
+  hasVerifiedEmail!: boolean;
+
+  // Relationships
+  @OneToMany(() => FileUser, (fileUser) => fileUser.user, { cascade: true })
+  fileUsers!: FileUser[];
 
   static findByName(email: string) {
     return this.createQueryBuilder('user')
@@ -19,7 +33,7 @@ export class User extends BaseEntity {
 
   static findById(id: string) {
     return this.createQueryBuilder('user')
-      .where('user.guid = :id', { id })
+      .where('user.id = :id', { id })
       .getOne();
   }
 }
