@@ -1,4 +1,11 @@
 import { DataSource } from 'typeorm';
+import { FileTag } from './entities/file-tag';
+import { FileType } from './entities/file-type';
+import { FileUser } from './entities/file-user';
+import { File } from './entities/file';
+import { Tag } from './entities/tag';
+import { Type } from './entities/type';
+import { User } from './entities/user';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -6,14 +13,14 @@ export const AppDataSource = new DataSource({
   port: parseInt(process.env.DB_PORT || '5432'),
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'admin',
-  database: process.env.DB_NAME || 'datashare',
-  schema: 'datashare',
+  database: process.env.DB_NAME || 'postgres',
+  schema: 'public',
   synchronize: process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV !== 'production',
-  entities: ['src/**/*.ts', 'entities/**/*.ts'],
+  entities: [User, File, Tag, Type, FileUser, FileTag, FileType],
   migrations: ['data/migrations/*.ts'],
   subscribers: ['src/subscribers/*.ts'],
   extra: {
-    search_path: 'public,datashare',
+    search_path: 'public',
   },
 });

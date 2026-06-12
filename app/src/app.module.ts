@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { FileModule } from './file/file.module';
 import { UserModule } from './user/user.module';
 import { User } from '../entities/user';
 import { File } from '../entities/file';
@@ -20,12 +21,13 @@ import { MigrationRunner } from './database/migration.runner';
       port: parseInt(process.env.DB_PORT || '5432'),
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'admin',
-      database: process.env.DB_NAME || 'datashare',
-      schema: 'datashare',
+      database: process.env.DB_NAME || 'postgres',
+      schema: 'public',
       entities: [User, File, Tag, Type, FileUser, FileTag, FileType],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV !== 'production',
     }),
+    FileModule,
     UserModule,
   ],
   controllers: [AppController],
