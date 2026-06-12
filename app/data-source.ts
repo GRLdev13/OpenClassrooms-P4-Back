@@ -10,7 +10,10 @@ export const AppDataSource = new DataSource({
   schema: 'datashare',
   synchronize: process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV !== 'production',
-  entities: ['src/**/*.entity.ts'],
-  migrations: ['src/data/migrations/*.ts'],
+  entities: ['src/**/*.ts', 'entities/**/*.ts'],
+  migrations: ['data/migrations/*.ts'],
   subscribers: ['src/subscribers/*.ts'],
+  extra: {
+    search_path: 'public,datashare',
+  },
 });
