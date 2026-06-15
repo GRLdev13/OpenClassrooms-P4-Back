@@ -4,11 +4,12 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { UserMapper } from './user.mapper';
 import { User } from '../../entities/user';
+import { FileModule } from '../file/file.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User])],
+  imports: [TypeOrmModule.forFeature([User]), FileModule],
   controllers: [UserController],
   providers: [UserService, UserMapper],
-  exports: [UserService],
+  exports: [UserService, UserMapper],
 })
 export class UserModule {}

@@ -1,3 +1,5 @@
+import { FileDto } from "../../file/dtos/file.dto";
+
 export class UserDto {
   id: string;
   email: string;
@@ -6,4 +8,35 @@ export class UserDto {
     this.id = id;
     this.email = email;
   }
+}
+
+export class CreateUserDto {
+  id: string;
+  email: string;
+
+  constructor(id: string, email: string) {
+    this.id = id;
+    this.email = email;
+  }
+}
+
+export class LoginDto {
+  email: string;
+  password: string;
+
+  constructor(email: string, password: string) {
+    this.email = email;
+    this.password = password;
+  }
+}
+
+export class ConnectedDto {
+  constructor(
+    public id: string,
+    public email: string,
+    public firstname: string,
+    public lastname: string,
+    public token: string,
+    public files: FileDto[] = [],
+  ) {}
 }

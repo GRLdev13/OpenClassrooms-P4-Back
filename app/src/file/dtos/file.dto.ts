@@ -6,5 +6,6 @@ export class FileDto {
     public hosting: string | null,
     public expirationDate: Date | null,
     public uploadDate: Date | null,
+    public isFileExpired: boolean,
   ) {}
 }

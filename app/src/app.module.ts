@@ -12,6 +12,7 @@ import { FileUser } from '../entities/file-user';
 import { FileTag } from '../entities/file-tag';
 import { FileType } from '../entities/file-type';
 import { MigrationRunner } from './database/migration.runner';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MigrationRunner } from './database/migration.runner';
     }),
     FileModule,
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, MigrationRunner],
