@@ -14,9 +14,6 @@ export class File extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'text', nullable: true })
-  base64!: string | null;
-
   @Column({ type: 'varchar', length: 255, nullable: true })
   url!: string | null;
 
@@ -28,6 +25,9 @@ export class File extends BaseEntity {
 
   @Column({ type: 'timestamp', nullable: true })
   uploadDate!: Date | null;
+
+  @Column({ type: 'bytea', nullable: true })
+  rawData!: Buffer | null;
 
   // Relationships
   @OneToMany(() => FileUser, (fileUser) => fileUser.file, { cascade: true })

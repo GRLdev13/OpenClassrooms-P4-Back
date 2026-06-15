@@ -4,4 +4,5 @@ export class CreateFileDto {
   hosting?: string | null;
   expirationDate?: string | null;
   uploadDate?: string | null;
+  rawFile?: string | null;
 }

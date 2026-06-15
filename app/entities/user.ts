@@ -18,6 +18,15 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   password!: string;
 
+  @Column({ type: 'varchar', length: 255 })
+  firstname!: string;
+
+  @Column({ type: 'varchar', length: 255 })
+  lastname!: string;
+
+  @Column({ type: 'bytea', nullable: true })
+  picture!: Buffer;
+
   @Column({ type: 'boolean', default: false })
   hasVerifiedEmail!: boolean;
 
