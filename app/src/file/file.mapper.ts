@@ -13,7 +13,7 @@ export class FileMapper {
       file.hosting,
       file.expirationDate,
       file.uploadDate,
-      this.isFileExpired(file),
+      this.hasFileExpired(file),
     );
   }
 
@@ -21,7 +21,7 @@ export class FileMapper {
     return files.map((file) => this.toDto(file));
   }
 
-  private isFileExpired(file: File): boolean {
+  hasFileExpired(file: File): boolean {
     if (!file.expirationDate) {
       return false;
     }
@@ -41,8 +41,8 @@ export class FileMapper {
       return file ? file.toString('base64') : ""
   }
 
-  toBlob(file: string): Buffer
+  toBlob(file: string): number[]
   {
-    return Buffer.from(file);
+    return Buffer.from(file).toJSON().data;
   }
 }

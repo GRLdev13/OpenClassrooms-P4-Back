@@ -16,7 +16,8 @@ export class FileService {
 
   async create(createFileDto: CreateFileDto): Promise<FileDto> {
     const file = this.fileRepository.create({
-      base64: createFileDto.base64 ?? null,
+      //TODO file already 64? see how to implement file upload first from front
+      // rawData: createFileDto.rawFile ? file.data.toString('base64') : null,
       url: createFileDto.url ?? null,
       hosting: createFileDto.hosting ?? null,
       expirationDate: this.toDateOrNull(createFileDto.expirationDate),
@@ -34,11 +35,50 @@ export class FileService {
       throw new NotFoundException(`File with id ${id} not found`);
     }
 
+    if (this.fileMapper.hasFileExpired(file)) {
+      //TODO proper exception
+      throw new NotFoundException(`File with id ${id} has expired`);
+    }
+
     return this.fileMapper.toDto(file);
+  }
+
+  async downloadFileById(id: string): Promise<Buffer> {
+    const file = await this.fileRepository.findOne({ where: { id } });
+
+    if (!file) {
+      throw new NotFoundException(`File with id ${id} not found`);
+    }
+
+    if (this.fileMapper.hasFileExpired(file)) {
+      //TODO proper exception
+      throw new NotFoundException(`File with id ${id} has expired`);
+    }
+
+    if (this.fileMapper.hasFileExpired(file)) {
+      //TODO proper exception
+      throw new NotFoundException(`File with id ${id} has expired`);
+    }
+    
+    if (!file.rawData || file.rawData.length === 0) {
+      throw new NotFoundException(`File with id ${id} has no raw data to be doawnloaded`);
+    }
+
+    return file.rawData;
   }
 
   async findAll(): Promise<FileDto[]> {
     const files = await this.fileRepository.find();
+    return this.fileMapper.toDtoArray(files);
+  }
+
+  async findByUserId(userId: string): Promise<FileDto[]> {
+    const files = await this.fileRepository
+      .createQueryBuilder('file')
+      .innerJoin('file.fileUsers', 'fileUser')
+      .where('fileUser.idUser = :userId', { userId })
+      .getMany();
+
     return this.fileMapper.toDtoArray(files);
   }
 
@@ -50,6 +90,17 @@ export class FileService {
     }
 
     return { deleted: true };
+  }
+
+  //TODO: share a file with someone
+  async shareWith(userId: string, fileId: string): Promise<FileDto[]> {
+    const files = await this.fileRepository
+      .createQueryBuilder('file')
+      .innerJoin('file.fileUsers', 'fileUser')
+      .where('fileUser.idUser = :userId', { userId })
+      .getMany();
+
+    return this.fileMapper.toDtoArray(files);
   }
 
   private toDateOrNull(value: string | null | undefined): Date | null {
