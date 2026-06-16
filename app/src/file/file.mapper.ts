@@ -35,4 +35,14 @@ export class FileMapper {
 
     return expirationTime <= Date.now();
   }
+
+  fromBlob(file: Buffer | null): string
+  {
+      return file ? file.toString('base64') : ""
+  }
+
+  toBlob(file: string): Buffer
+  {
+    return Buffer.from(file);
+  }
 }
