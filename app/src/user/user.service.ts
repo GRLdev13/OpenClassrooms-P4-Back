@@ -2,19 +2,18 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user';
-import { UserDto } from './dtos/user.dto';
-import { UserMapper } from './user.mapper';
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private userMapper: UserMapper,
   ) {}
 
-  async testDatabaseConnection(): Promise<{ connected: boolean; message: string }> {
+  async testDatabaseConnection(): Promise<{
+    connected: boolean;
+    message: string;
+  }> {
     try {
       await this.userRepository.query('SELECT NOW()');
       return {
@@ -22,35 +21,70 @@ export class UserService {
         message: 'Successfully connected to the database',
       };
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
       return {
         connected: false,
-        message: `Failed to connect to database: ${error.message}`,
+        message: `Failed to connect to database: ${message}`,
       };
     }
   }
 
-  async findByEmail(email: string): Promise<UserDto> {
-    const user = await this.userRepository.findOne({ where: { email } });
+  async findByEmail(email: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: {
+        fileUsers: {
+          file: true,
+        },
+      },
+    });
     if (!user) {
       throw new NotFoundException(`User with email ${email} not found`);
     }
-    return this.userMapper.toDto(user);
+    return user;
   }
 
-  async findById(id: string): Promise<UserDto> {
+  async findById(id: string): Promise<User> {
     try {
       const user = await this.userRepository.findOne({ where: { id } });
       if (!user) {
         throw new NotFoundException(`User with id ${id} not found`);
       }
-      return this.userMapper.toDto(user);
+      return user;
     } catch (error) {
-      throw new NotFoundException(error);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new NotFoundException(message);
     }
   }
 
-  async findAll(): Promise<UserDto[]> {
-    const users = await this.userRepository.find();
-    return this.userMapper.toDtoArray(users);
+  async findAll(): Promise<User[]> {
+    return this.userRepository.find();
+  }
+
+  async existsByEmail(email: string): Promise<boolean> {
+    return this.userRepository.exists({ where: { email } });
+  }
+
+  async createUser(email: string, password: string, firstname: string, lastname: string): Promise<User> {
+    const user = this.userRepository.create({
+      email,
+      password,
+      firstname: firstname,
+      lastname: lastname,
+      picture: null,
+      hasVerifiedEmail: false,
+      fileUsers: [],
+    });
+
+    return this.userRepository.save(user);
+  }
+
+  async create(): Promise<User[]> {
+    return this.userRepository.find();
+  }
+
+  async login(): Promise<User[]> {
+    return this.userRepository.find();
   }
 }
