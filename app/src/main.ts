@@ -15,6 +15,32 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
+  const allowedOrigins = (process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const isAllowedOrigin = allowedOrigins.includes(origin);
+      const isLocalDevelopmentOrigin =
+        allowedOrigins.length === 0 &&
+        /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+
+      if (isAllowedOrigin || isLocalDevelopmentOrigin) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin} is not allowed by CORS`));
+    },
+    credentials: true,
+  });
   await app.listen(process.env.PORT ?? 3000);
 }
 void bootstrap();
