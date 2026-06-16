@@ -38,6 +38,6 @@ export class FileMapper {
   }
 
   toBlob(file: string): Buffer<ArrayBuffer> {
-    return Buffer.from(file);
+    return Buffer.from(file, 'base64');
   }
 }

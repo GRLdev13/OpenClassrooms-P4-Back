@@ -21,7 +21,6 @@ export class CreateFileDto {
 export class GetFileDto {
   constructor(
     public id: string,
-    public base64: string | null,
     public expirationDate: Date | null,
     public uploadDate: Date | null,
     public isFileExpired: boolean,
@@ -31,9 +30,13 @@ export class GetFileDto {
 export class DeleteFileDto {
   constructor(
     public id: string,
-    public base64: string | null,
-    public expirationDate: Date | null,
+  ) {}
+}
+  
+export class DownloadFileDto {
+  constructor(
+    public id: string,
     public uploadDate: Date | null,
-    public isFileExpired: boolean,
+    public rawData: Buffer | Buffer<ArrayBufferLike> | null,
   ) {}
 }
