@@ -11,12 +11,16 @@ export class UserDto {
 }
 
 export class CreateUserDto {
-  id: string;
   email: string;
+  password: string;
+  firstname: string;
+  lastname: string;
 
-  constructor(id: string, email: string) {
-    this.id = id;
+  constructor(email: string, password: string, firstname: string, lastname: string) {
     this.email = email;
+    this.password = password;
+    this.firstname = password;
+    this.lastname = password;
   }
 }
 
@@ -38,5 +42,6 @@ export class ConnectedDto {
     public lastname: string,
     public token: string,
     public files: FileDto[] = [],
+    public picture = '',
   ) {}
 }
