@@ -29,6 +29,7 @@ export class UserMapper {
           .map((fileUser) => fileUser.file)
           .filter((file) => !!file),
       ),
+      this.fileMapper.fromBlob(user.picture)
     );
   }
 }

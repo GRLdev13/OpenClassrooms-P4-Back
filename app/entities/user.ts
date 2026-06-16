@@ -25,7 +25,7 @@ export class User extends BaseEntity {
   lastname!: string;
 
   @Column({ type: 'bytea', nullable: true })
-  picture!: Buffer;
+  picture!: Buffer | null;
 
   @Column({ type: 'boolean', default: false })
   hasVerifiedEmail!: boolean;
