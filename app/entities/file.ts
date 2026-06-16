@@ -14,14 +14,11 @@ export class File extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  url!: string | null;
-
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  hosting!: string | null;
-
   @Column({ type: 'timestamp', nullable: true })
   expirationDate!: Date | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  password!: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
   uploadDate!: Date | null;

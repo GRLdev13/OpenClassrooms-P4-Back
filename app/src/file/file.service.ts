@@ -15,14 +15,13 @@ export class FileService {
   ) {}
 
   async create(createFileDto: CreateFileDto): Promise<FileDto> {
-    const file = this.fileRepository.create({
-      //TODO file already 64? see how to implement file upload first from front
-      // rawData: createFileDto.rawFile ? file.data.toString('base64') : null,
-      url: createFileDto.url ?? null,
-      hosting: createFileDto.hosting ?? null,
-      expirationDate: this.toDateOrNull(createFileDto.expirationDate),
-      uploadDate: this.toDateOrNull(createFileDto.uploadDate),
-    });
+    const file = new File();
+    file.rawData = createFileDto.rawFile
+      ? this.fileMapper.toBlob(createFileDto.rawFile)
+      : null;
+    file.password = createFileDto.password ?? null;
+    file.uploadDate = this.toDateOrNull(createFileDto.uploadDate);
+    file.expirationDate = this.toDateOrNull(createFileDto.expirationDate);
 
     const savedFile = await this.fileRepository.save(file);
     return this.fileMapper.toDto(savedFile);
@@ -35,7 +34,7 @@ export class FileService {
       throw new NotFoundException(`File with id ${id} not found`);
     }
 
-    if (this.fileMapper.hasFileExpired(file)) {
+    if (this.fileMapper.hasFileExpired(file.expirationDate)) {
       //TODO proper exception
       throw new NotFoundException(`File with id ${id} has expired`);
     }
@@ -50,18 +49,14 @@ export class FileService {
       throw new NotFoundException(`File with id ${id} not found`);
     }
 
-    if (this.fileMapper.hasFileExpired(file)) {
-      //TODO proper exception
-      throw new NotFoundException(`File with id ${id} has expired`);
-    }
-
-    if (this.fileMapper.hasFileExpired(file)) {
-      //TODO proper exception
+    if (this.fileMapper.hasFileExpired(file.expirationDate)) {
+      //TODO proper exception type
       throw new NotFoundException(`File with id ${id} has expired`);
     }
     
     if (!file.rawData || file.rawData.length === 0) {
-      throw new NotFoundException(`File with id ${id} has no raw data to be doawnloaded`);
+      //TODO proper exception type
+      throw new NotFoundException(`File with id ${id} has no raw data to be downloaded`);
     }
 
     return file.rawData;
@@ -92,8 +87,9 @@ export class FileService {
     return { deleted: true };
   }
 
-  //TODO: share a file with someone
-  async shareWith(userId: string, fileId: string): Promise<FileDto[]> {
+  //TODO: share a file with someone else
+  async shareWith(userId: string, fileId: string, fileToken:string): Promise<FileDto[]> {
+    //TODO: security with file token
     const files = await this.fileRepository
       .createQueryBuilder('file')
       .innerJoin('file.fileUsers', 'fileUser')

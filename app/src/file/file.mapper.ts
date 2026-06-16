@@ -4,16 +4,13 @@ import { FileDto } from './dtos/file.dto';
 
 @Injectable()
 export class FileMapper {
-
   toDto(file: File): FileDto {
     return new FileDto(
       file.id,
-      file.rawData?.toString() ?? null,
-      file.url,
-      file.hosting,
+      file.rawData ?? null,
       file.expirationDate,
       file.uploadDate,
-      this.hasFileExpired(file),
+      this.hasFileExpired(file?.expirationDate),
     );
   }
 
@@ -21,12 +18,12 @@ export class FileMapper {
     return files.map((file) => this.toDto(file));
   }
 
-  hasFileExpired(file: File): boolean {
-    if (!file.expirationDate) {
+  hasFileExpired(expDate: Date | null): boolean {
+    if (!expDate) {
       return false;
     }
 
-    const expirationTime = file.expirationDate.getTime();
+    const expirationTime = expDate.getTime();
 
     //if expiration time set to infinity (unset)
     if (Number.isNaN(expirationTime)) {
@@ -36,13 +33,11 @@ export class FileMapper {
     return expirationTime <= Date.now();
   }
 
-  fromBlob(file: Buffer | null): string
-  {
-      return file ? file.toString('base64') : ""
+  fromBlob(file: Buffer | null): string {
+    return file ? file.toString('base64') : '';
   }
 
-  toBlob(file: string): number[]
-  {
-    return Buffer.from(file).toJSON().data;
+  toBlob(file: string): Buffer<ArrayBuffer> {
+    return Buffer.from(file);
   }
 }
