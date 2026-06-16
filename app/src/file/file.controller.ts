@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Post, Query, StreamableFile  } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Query,
+  StreamableFile,
+} from '@nestjs/common';
 import { CreateFileDto } from './dtos/create-file.dto';
 import { FileDto } from './dtos/file.dto';
 import { FileService } from './file.service';
@@ -18,7 +26,7 @@ export class FileController {
     return this.fileService.findById(id);
   }
 
-   @Get('by-user-id')
+  @Get('by-user-id')
   async findByUserId(@Query('id') id: string): Promise<FileDto[]> {
     return this.fileService.findByUserId(id);
   }
@@ -28,13 +36,13 @@ export class FileController {
     return this.fileService.findAll();
   }
 
-    @Get('data-by-id')
-  async downloadById(@Query('id') id: string): Promise<StreamableFile > {
+  @Get('data-by-id')
+  async downloadById(@Query('id') id: string): Promise<StreamableFile> {
     const dataFile = await this.fileService.downloadFileById(id);
-      const file = createReadStream(dataFile);
+    const file = createReadStream(dataFile);
     return new StreamableFile(file);
   }
-  
+
   @Delete()
   async deleteById(@Query('id') id: string): Promise<{ deleted: boolean }> {
     return this.fileService.deleteById(id);
@@ -42,7 +50,7 @@ export class FileController {
 
   //TODO later: share file with another account.
   @Get('share-with')
-async shareWith(@Query('id') id: string): Promise<FileDto[]> {
- return this.fileService.findByUserId(id);
-}
+  async shareWith(@Query('id') id: string): Promise<FileDto[]> {
+    return this.fileService.findByUserId(id);
+  }
 }

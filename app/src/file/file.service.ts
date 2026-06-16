@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { File } from '../../entities/file';
+import { AuthService } from '../auth/auth.service';
 import { CreateFileDto } from './dtos/create-file.dto';
 import { FileDto } from './dtos/file.dto';
 import { FileMapper } from './file.mapper';
@@ -12,6 +13,8 @@ export class FileService {
     @InjectRepository(File)
     private readonly fileRepository: Repository<File>,
     private readonly fileMapper: FileMapper,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
   ) {}
 
   async create(createFileDto: CreateFileDto): Promise<FileDto> {
@@ -19,7 +22,9 @@ export class FileService {
     file.rawData = createFileDto.rawFile
       ? this.fileMapper.toBlob(createFileDto.rawFile)
       : null;
-    file.password = createFileDto.password ?? null;
+    file.password = createFileDto.password
+      ? this.authService.hashPassword(createFileDto.password)
+      : null;
     file.uploadDate = this.toDateOrNull(createFileDto.uploadDate);
     file.expirationDate = this.toDateOrNull(createFileDto.expirationDate);
 
