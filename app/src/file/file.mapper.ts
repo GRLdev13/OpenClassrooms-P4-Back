@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { File } from '../../entities/file';
-import { FileDto } from './dtos/file.dto';
+import { GetFileDto } from './dtos/file.dto';
 
 @Injectable()
 export class FileMapper {
-  toDto(file: File): FileDto {
-    return new FileDto(
+  toDto(file: File): GetFileDto {
+    return new GetFileDto(
       file.id,
-      file.rawData ?? null,
+      file.name ?? "unamed file",
       file.expirationDate,
       file.uploadDate,
       this.hasFileExpired(file?.expirationDate),
     );
   }
 
-  toDtoArray(files: File[]): FileDto[] {
+  toDtoArray(files: File[]): GetFileDto[] {
     return files.map((file) => this.toDto(file));
   }
 

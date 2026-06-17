@@ -1,4 +1,4 @@
-import { FileDto } from "../../file/dtos/file.dto";
+import { GetFileDto } from "../../file/dtos/file.dto";
 
 export class UserDto {
   id: string;
@@ -41,7 +41,7 @@ export class ConnectedDto {
     public firstname: string,
     public lastname: string,
     public token: string,
-    public files: FileDto[] = [],
+    public files: GetFileDto[] = [],
     public picture = '',
   ) {}
 }

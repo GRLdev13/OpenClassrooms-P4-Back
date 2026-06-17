@@ -1,10 +1,16 @@
-import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { File } from '../../entities/file';
 import { AuthService } from '../auth/auth.service';
-import { CreateFileDto } from './dtos/create-file.dto';
-import { FileDto } from './dtos/file.dto';
+import { CreateFileDto } from './dtos/createFile.dto';
+import { GetFileDto } from './dtos/file.dto';
 import { FileMapper } from './file.mapper';
 
 @Injectable()
@@ -17,22 +23,32 @@ export class FileService {
     private readonly authService: AuthService,
   ) {}
 
-  async create(createFileDto: CreateFileDto): Promise<FileDto> {
-    const file = new File();
-    file.rawData = createFileDto.rawFile
-      ? this.fileMapper.toBlob(createFileDto.rawFile)
-      : null;
-    file.password = createFileDto.password
-      ? this.authService.hashPassword(createFileDto.password)
-      : null;
-    file.uploadDate = this.toDateOrNull(createFileDto.uploadDate);
-    file.expirationDate = this.toDateOrNull(createFileDto.expirationDate);
+  async create(createFileDto: CreateFileDto): Promise<boolean> {
+    if (createFileDto == null) {
+      //todo better error
+      throw new NotFoundException('File payload is required');
+    }
 
-    const savedFile = await this.fileRepository.save(file);
-    return this.fileMapper.toDto(savedFile);
+    try {
+      const file = new File();
+      file.name = createFileDto.name;
+      file.rawData = this.fileMapper.toBlob(createFileDto.rawFile);
+      file.password = createFileDto.password
+        ? this.authService.hashPassword(createFileDto.password)
+        : null;
+      file.uploadDate = createFileDto.uploadDate
+        ? this.toDateOrNull(createFileDto.uploadDate)
+        : new Date();
+      file.expirationDate = this.toDateOrNull(createFileDto.expirationDate);
+
+      await this.fileRepository.save(file);
+    } catch (error) {
+      return false;
+    }
+    return true;
   }
 
-  async findById(id: string): Promise<FileDto> {
+  async findById(id: string): Promise<GetFileDto> {
     const file = await this.fileRepository.findOne({ where: { id } });
 
     if (!file) {
@@ -58,21 +74,23 @@ export class FileService {
       //TODO proper exception type
       throw new NotFoundException(`File with id ${id} has expired`);
     }
-    
+
     if (!file.rawData || file.rawData.length === 0) {
       //TODO proper exception type
-      throw new NotFoundException(`File with id ${id} has no raw data to be downloaded`);
+      throw new NotFoundException(
+        `File with id ${id} has no raw data to be downloaded`,
+      );
     }
 
     return file.rawData;
   }
 
-  async findAll(): Promise<FileDto[]> {
+  async findAll(): Promise<GetFileDto[]> {
     const files = await this.fileRepository.find();
     return this.fileMapper.toDtoArray(files);
   }
 
-  async findByUserId(userId: string): Promise<FileDto[]> {
+  async findByUserId(userId: string): Promise<GetFileDto[]> {
     const files = await this.fileRepository
       .createQueryBuilder('file')
       .innerJoin('file.fileUsers', 'fileUser')
@@ -93,7 +111,11 @@ export class FileService {
   }
 
   //TODO: share a file with someone else
-  async shareWith(userId: string, fileId: string, fileToken:string): Promise<FileDto[]> {
+  async shareWith(
+    userId: string,
+    fileId: string,
+    fileToken: string,
+  ): Promise<GetFileDto[]> {
     //TODO: security with file token
     const files = await this.fileRepository
       .createQueryBuilder('file')
@@ -104,7 +126,17 @@ export class FileService {
     return this.fileMapper.toDtoArray(files);
   }
 
-  private toDateOrNull(value: string | null | undefined): Date | null {
-    return value ? new Date(value) : null;
+  private toDateOrNull(value: Date | string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException('Invalid date format');
+    }
+
+    return date;
   }
 }

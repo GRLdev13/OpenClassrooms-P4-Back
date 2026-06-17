@@ -17,6 +17,9 @@ export class File extends BaseEntity {
   @Column({ type: 'timestamp', nullable: true })
   expirationDate!: Date | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: false })
+  name!: string | null;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   password!: string | null;
 
