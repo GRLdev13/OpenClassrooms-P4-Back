@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Param,
   ParseFilePipe,
   Post,
   Query,
@@ -16,10 +17,14 @@ import { GetFileDto } from './dtos/file.dto';
 import { FileService } from './file.service';
 import { createReadStream } from 'fs';
 import { type Express } from 'express';
+import { FileValidator } from './validators/file.validator';
 
 @Controller('file')
 export class FileController {
-  constructor(private readonly fileService: FileService) {}
+  constructor(
+    private readonly fileService: FileService,
+    private readonly fileValidator: FileValidator,
+  ) {}
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -31,10 +36,13 @@ export class FileController {
     console.log('File body parameters: ', body);
     //TODO: Set the "good data" of file name.
     //TODO: check file extensions and everything.
-    let isFileCreated = await this.fileService.create({
+    const createFileDto = {
       ...body,
       rawFile: file.buffer.toString('base64'),
-    });
+    };
+    await this.fileValidator.validateCreate(createFileDto);
+
+    let isFileCreated = await this.fileService.create(createFileDto);
 
     if (isFileCreated) {
       return this.fileService.findAll();
@@ -65,8 +73,8 @@ export class FileController {
     return new StreamableFile(file);
   }
 
-  @Delete()
-  async deleteById(@Query('id') id: string): Promise<{ deleted: boolean }> {
+  @Delete('delete/:id')
+  async deleteById(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.fileService.deleteById(id);
   }
 

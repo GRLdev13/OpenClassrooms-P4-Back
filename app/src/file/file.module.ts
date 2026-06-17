@@ -5,11 +5,12 @@ import { AuthModule } from '../auth/auth.module';
 import { FileController } from './file.controller';
 import { FileMapper } from './file.mapper';
 import { FileService } from './file.service';
+import { FileValidator } from './validators/file.validator';
 
 @Module({
   imports: [TypeOrmModule.forFeature([File]), forwardRef(() => AuthModule)],
   controllers: [FileController],
-  providers: [FileService, FileMapper],
+  providers: [FileService, FileMapper, FileValidator],
   exports: [FileService, FileMapper],
 })
 export class FileModule {}
