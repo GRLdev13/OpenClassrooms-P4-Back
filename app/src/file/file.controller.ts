@@ -21,15 +21,12 @@ import { FileValidator } from './validators/file.validator';
 
 @Controller('file')
 export class FileController {
-  constructor(
-    private readonly fileService: FileService,
-    private readonly fileValidator: FileValidator,
-  ) {}
+  constructor(private readonly fileService: FileService) {}
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
-    @Body() body: CreateFileDto,
+    @Body(FileValidator) body: CreateFileDto,
     @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
     file: Express.Multer.File,
   ): Promise<GetFileDto[]> {
@@ -40,7 +37,6 @@ export class FileController {
       ...body,
       rawFile: file.buffer.toString('base64'),
     };
-    await this.fileValidator.validateCreate(createFileDto);
 
     let isFileCreated = await this.fileService.create(createFileDto);
 

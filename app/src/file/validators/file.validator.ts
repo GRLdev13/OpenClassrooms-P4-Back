@@ -1,9 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { validate } from 'class-validator';
+import {
+  ArgumentMetadata,
+  BadRequestException,
+  Injectable,
+  ValidationPipe,
+} from '@nestjs/common';
 import { CreateFileDto } from '../dtos/createFile.dto';
 
 @Injectable()
-export class FileValidator {
+export class FileValidator extends ValidationPipe {
   static readonly forbiddenExtensions = [
     '.app',
     '.bat',
@@ -41,31 +45,34 @@ export class FileValidator {
     '.wsh',
   ];
 
-  async validateCreate(createFileDto: CreateFileDto): Promise<void> {
-    const dto = Object.assign(new CreateFileDto(), createFileDto);
-    const errors = await validate(dto);
-    const forbiddenExtension = this.getForbiddenExtension(dto.extension);
+  constructor() {
+    super({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    });
+  }
+
+  async transform(value: CreateFileDto, metadata: ArgumentMetadata) {
+    const transformedValue = await super.transform(value, metadata);
+    const forbiddenExtension = this.getForbiddenExtension(
+      transformedValue.extension,
+    );
 
     if (forbiddenExtension) {
-      errors.push({
-        property: 'extension',
-        constraints: {
-          forbiddenExtension: `${forbiddenExtension} files are not allowed`,
-        },
+      throw new BadRequestException({
+        message: 'Invalid file payload',
+        errors: [
+          {
+            property: 'extension',
+            constraints: {
+              forbiddenExtension: `${forbiddenExtension} files are not allowed`,
+            },
+          },
+        ],
       });
     }
 
-    if (errors.length === 0) {
-      return;
-    }
-
-    throw new BadRequestException({
-      message: 'Invalid file payload',
-      errors: errors.map((error) => ({
-        property: error.property,
-        constraints: error.constraints,
-      })),
-    });
+    return transformedValue;
   }
 
   private getForbiddenExtension(extension?: string): string | null {

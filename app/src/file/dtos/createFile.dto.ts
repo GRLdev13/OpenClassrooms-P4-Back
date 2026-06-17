@@ -3,46 +3,56 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateFileDto {
-  @IsString()
-  @IsNotEmpty()
+  // @IsString()
+  // @IsNotEmpty()
+  @ValidateIf((o) => false)
   public name: string;
 
-  @IsOptional()
-  @IsString()
+  // @IsOptional()
+  @ValidateIf((o) => false)
+  // @IsString()
   public extension?: string;
 
-  @IsString()
-  @IsNotEmpty()
+  // @IsOptional()
+  @ValidateIf((o) => false)
+  // @IsString()
   public rawFile: string;
 
-  @IsOptional()
-  @IsString()
+  // @IsOptional()
+  @ValidateIf((o) => false)
+  // @IsString()
   public password?: string | null;
 
-  @IsOptional()
-  @IsDateString()
-  public expirationDate?: Date | string | null;
-
-  @IsOptional()
-  @IsDateString()
+  // @IsOptional()
+  @ValidateIf((o) => false)
+  // @IsDateString()
   public uploadDate?: Date | string | null;
 
+  @ValidateIf((o) => false)
+  public tags?: CreateFileDto[] = [];
+
+  @ValidateIf((o) => false)
+  public expirationTimeInDay: number = 0;
+
   constructor(
-    name: string = "",
+    name: string = '',
     extension?: string,
-    rawFile: string = "",
+    rawFile: string = '',
+    tags: [] = [],
     password?: string | null,
-    expirationDate?: Date | string | null,
     uploadDate?: Date | string | null,
+    expirationTimeInDay: number = 0,
   ) {
     this.name = name;
     this.extension = extension;
     this.rawFile = rawFile;
+    this.tags = tags;
     this.password = password;
-    this.expirationDate = expirationDate;
     this.uploadDate = uploadDate;
+    this.expirationTimeInDay = expirationTimeInDay;
   }
 }
