@@ -39,8 +39,13 @@ export class FileService {
       file.uploadDate = createFileDto.uploadDate
         ? this.toDateOrNull(createFileDto.uploadDate)
         : new Date();
-      file.expirationDate = this.toDateOrNull(createFileDto.expirationDate);
 
+      const expirationDate = new Date();
+      expirationDate.setDate(
+        expirationDate.getDate() + createFileDto.expirationTimeInDay,
+      );
+
+      file.expirationDate = expirationDate;
       await this.fileRepository.save(file);
     } catch (error) {
       return false;
