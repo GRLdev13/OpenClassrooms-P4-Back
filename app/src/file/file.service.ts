@@ -77,12 +77,12 @@ export class FileService {
 
     if (this.fileMapper.hasFileExpired(file.expirationDate)) {
       //TODO proper exception type
-      throw new NotFoundException(`File with id ${id} has expired`);
+      throw new BadRequestException(`File with id ${id} has expired`);
     }
 
     if (!file.rawData || file.rawData.length === 0) {
       //TODO proper exception type
-      throw new NotFoundException(
+      throw new BadRequestException(
         `File with id ${id} has no raw data to be downloaded`,
       );
     }

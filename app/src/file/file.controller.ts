@@ -15,7 +15,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateFileDto } from './dtos/createFile.dto';
 import { GetFileDto } from './dtos/file.dto';
 import { FileService } from './file.service';
-import { createReadStream } from 'fs';
 import { type Express } from 'express';
 import { FileValidator } from './validators/file.validator';
 
@@ -62,11 +61,10 @@ export class FileController {
     return this.fileService.findAll();
   }
 
-  @Get('data-by-id')
-  async downloadById(@Query('id') id: string): Promise<StreamableFile> {
+  @Get(':id')
+  async downloadById(@Param('id') id: string): Promise<StreamableFile> {
     const dataFile = await this.fileService.downloadFileById(id);
-    const file = createReadStream(dataFile);
-    return new StreamableFile(file);
+    return new StreamableFile(dataFile);
   }
 
   @Delete('delete/:id')
