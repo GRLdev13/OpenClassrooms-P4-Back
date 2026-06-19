@@ -10,7 +10,6 @@ import { Tag } from '../entities/tag';
 import { Type } from '../entities/type';
 import { FileUser } from '../entities/file-user';
 import { FileTag } from '../entities/file-tag';
-import { FileType } from '../entities/file-type';
 import { MigrationRunner } from './database/migration.runner';
 import { AuthModule } from './auth/auth.module';
 
@@ -24,7 +23,7 @@ import { AuthModule } from './auth/auth.module';
       password: process.env.DB_PASSWORD || 'admin',
       database: process.env.DB_NAME || 'postgres',
       schema: 'public',
-      entities: [User, File, Tag, Type, FileUser, FileTag, FileType],
+      entities: [User, File, Tag, Type, FileUser, FileTag],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV !== 'production',
     }),

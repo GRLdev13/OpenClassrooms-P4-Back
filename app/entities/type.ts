@@ -5,7 +5,6 @@ import {
   Column,
   OneToMany,
 } from 'typeorm';
-import { FileType } from './file-type';
 
 @Entity('Type')
 export class Type extends BaseEntity {
@@ -20,8 +19,4 @@ export class Type extends BaseEntity {
 
   @Column({ type: 'boolean', default: false })
   isAllowed!: boolean;
-
-  // Relationships
-  @OneToMany(() => FileType, (fileType) => fileType.type, { cascade: true })
-  fileTypes!: FileType[];
 }

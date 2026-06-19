@@ -7,7 +7,6 @@ import {
 } from 'typeorm';
 import { FileUser } from './file-user';
 import { FileTag } from './file-tag';
-import { FileType } from './file-type';
 
 @Entity('File')
 export class File extends BaseEntity {
@@ -35,7 +34,4 @@ export class File extends BaseEntity {
 
   @OneToMany(() => FileTag, (fileTag) => fileTag.file, { cascade: true })
   fileTags!: FileTag[];
-
-  @OneToMany(() => FileType, (fileType) => fileType.file, { cascade: true })
-  fileTypes!: FileType[];
 }
