@@ -15,11 +15,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateFileDto } from './dtos/createFile.dto';
-import {
-  DownloadFileLinkDto,
-  DownloadFileRequestDto,
-  GetFileDto,
-} from './dtos/file.dto';
+import { DownloadFileRequestDto } from './dtos/downloadFileRequestDto';
+import { GetFileDto } from './dtos/getFileDto';
 import { FileService } from './file.service';
 import { type Express } from 'express';
 import { FileValidator } from './validators/file.validator';

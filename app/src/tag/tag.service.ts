@@ -1,0 +1,69 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Tag } from '../../entities/tag';
+import { AddTagDto } from './dtos/addTagDto';
+import { TagDto } from './dtos/tagDto';
+
+@Injectable()
+export class TagService {
+  constructor(
+    @InjectRepository(Tag)
+    private readonly tagRepository: Repository<Tag>,
+  ) {}
+
+  async add(addTagDto: AddTagDto): Promise<TagDto> {
+    const name = addTagDto?.name?.trim();
+
+    if (!name) {
+      throw new BadRequestException('Tag name is required');
+    }
+
+    if (name.length > 255) {
+      throw new BadRequestException(
+        'Tag name must contain at most 255 characters',
+      );
+    }
+
+    const existingTag = await this.tagRepository
+      .createQueryBuilder('tag')
+      .where('LOWER(tag.name) = LOWER(:name)', { name })
+      .getOne();
+
+    if (existingTag) {
+      throw new ConflictException(`Tag "${name}" already exists`);
+    }
+
+    const tag = this.tagRepository.create({ name });
+    const savedTag = await this.tagRepository.save(tag);
+
+    return this.toDto(savedTag);
+  }
+
+  async delete(id: string): Promise<{ deleted: boolean }> {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        id,
+      )
+    ) {
+      throw new BadRequestException('A valid tag id is required');
+    }
+
+    const result = await this.tagRepository.delete(id);
+
+    if (!result.affected) {
+      throw new NotFoundException(`Tag with id ${id} not found`);
+    }
+
+    return { deleted: true };
+  }
+
+  private toDto(tag: Tag): TagDto {
+    return new TagDto(tag.id, tag.name);
+  }
+}
