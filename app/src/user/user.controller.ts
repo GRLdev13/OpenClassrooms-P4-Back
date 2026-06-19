@@ -1,13 +1,17 @@
-import { Controller, Get, Query, Post } from '@nestjs/common';
+import { Controller, Get, Query, Post, Body } from '@nestjs/common';
 import { UserService } from './user.service';
+import { ConnectedDto } from './dtos/connected.dto';
+import { LoginUserDto } from './dtos/login-user.dto';
 import { UserDto } from './dtos/user.dto';
 import { UserMapper } from './user.mapper';
+import { AuthService } from '../auth/auth.service';
 
 @Controller('user')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly userMapper: UserMapper,
+    private readonly authService: AuthService
   ) {}
 
   @Get('health')
@@ -37,9 +41,8 @@ export class UserController {
   }
 
   @Post('login')
-  async login(): Promise<UserDto[]> {
-    const users = await this.userService.login();
-    return this.userMapper.toDtoArray(users);
+  async login(@Body() connectRequest : LoginUserDto): Promise<ConnectedDto> {
+    return this.authService.signIn(connectRequest.email, connectRequest.passwword)
   }
 
   @Post('create')
