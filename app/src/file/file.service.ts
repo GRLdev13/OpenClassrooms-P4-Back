@@ -8,11 +8,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { File } from '../../entities/file';
+import { FileTag } from '../../entities/file-tag';
+import { Tag } from '../../entities/tag';
 import { AuthService } from '../auth/auth.service';
 import { CreateFileDto } from './dtos/createFile.dto';
-import { GetFileDto } from './dtos/file.dto';
+import { CreateFileTagDto } from './dtos/createFileTagDto';
+import { GetFileDto } from './dtos/getFileDto';
 import { FileMapper } from './file.mapper';
 
 @Injectable()
@@ -50,7 +53,10 @@ export class FileService {
       );
 
       file.expirationDate = expirationDate;
-      await this.fileRepository.save(file);
+      await this.fileRepository.manager.transaction(async (manager) => {
+        await manager.save(File, file);
+        await this.createFileTags(manager, file, createFileDto.tags);
+      });
     } catch (error) {
       return false;
     }
@@ -115,8 +121,15 @@ export class FileService {
   async findByUserId(userId: string): Promise<GetFileDto[]> {
     const files = await this.fileRepository
       .createQueryBuilder('file')
-      .innerJoin('file.fileUsers', 'fileUser')
-      .where('fileUser.idUser = :userId', { userId })
+      .innerJoin(
+        'file.fileUsers',
+        'fileUser',
+        'fileUser.idUser = :userId',
+        { userId },
+      )
+      .leftJoinAndSelect('file.fileTags', 'fileTag')
+      .leftJoinAndSelect('fileTag.tag', 'tag')
+      .distinct(true)
       .getMany();
 
     return this.fileMapper.toDtoArray(files);
@@ -146,6 +159,107 @@ export class FileService {
       .getMany();
 
     return this.fileMapper.toDtoArray(files);
+  }
+
+  private async createFileTags(
+    manager: EntityManager,
+    file: File,
+    rawTags?: CreateFileTagDto[] | string,
+  ): Promise<void> {
+    const tagInputs = this.normalizeTags(rawTags);
+    const linkedTagIds = new Set<string>();
+
+    for (const tagInput of tagInputs) {
+      const tag = await this.findOrCreateTag(manager, tagInput);
+
+      if (linkedTagIds.has(tag.id)) {
+        continue;
+      }
+
+      const fileTag = manager.create(FileTag, {
+        idFile: file.id,
+        idTags: tag.id,
+        file,
+        tag,
+      });
+
+      await manager.save(FileTag, fileTag);
+      linkedTagIds.add(tag.id);
+    }
+  }
+
+  private async findOrCreateTag(
+    manager: EntityManager,
+    tagInput: CreateFileTagDto,
+  ): Promise<Tag> {
+    const tagRepository = manager.getRepository(Tag);
+    const id = tagInput.id?.trim();
+    const name = tagInput.name?.trim();
+
+    if (id) {
+      const tagById = await tagRepository.findOne({ where: { id } });
+
+      if (tagById) {
+        return tagById;
+      }
+    }
+
+    if (!name) {
+      throw new BadRequestException('Each tag must have a valid id or name');
+    }
+
+    const existingTag = await tagRepository
+      .createQueryBuilder('tag')
+      .where('LOWER(tag.name) = LOWER(:name)', { name })
+      .getOne();
+
+    if (existingTag) {
+      return existingTag;
+    }
+
+    return tagRepository.save(tagRepository.create({ name }));
+  }
+
+  private normalizeTags(
+    rawTags?: CreateFileTagDto[] | string,
+  ): CreateFileTagDto[] {
+    if (!rawTags) {
+      return [];
+    }
+
+    let tags: unknown = rawTags;
+
+    if (typeof rawTags === 'string') {
+      const value = rawTags.trim();
+
+      if (!value) {
+        return [];
+      }
+
+      try {
+        tags = JSON.parse(value);
+      } catch {
+        tags = [value];
+      }
+    }
+
+    const tagArray: unknown[] = Array.isArray(tags) ? tags : [tags];
+
+    return tagArray.map((tag) => {
+      if (typeof tag === 'string') {
+        return { name: tag };
+      }
+
+      if (tag && typeof tag === 'object') {
+        const value = tag as Record<string, unknown>;
+        return {
+          id: typeof value.id === 'string' ? value.id : undefined,
+          name: typeof value.name === 'string' ? value.name : undefined,
+        };
+      }
+
+      throw new BadRequestException('Invalid tag value');
+    });
   }
 
   private toDateOrNull(value: Date | string | null | undefined): Date | null {

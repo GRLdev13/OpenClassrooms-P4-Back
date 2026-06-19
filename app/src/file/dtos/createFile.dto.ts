@@ -5,6 +5,7 @@ import {
   IsString,
   ValidateIf,
 } from 'class-validator';
+import { CreateFileTagDto } from './createFileTagDto';
 
 export class CreateFileDto {
   // @IsString()
@@ -33,7 +34,7 @@ export class CreateFileDto {
   public uploadDate?: Date | string | null;
 
   @ValidateIf((o) => false)
-  public tags?: CreateFileDto[] = [];
+  public tags?: CreateFileTagDto[] | string = [];
 
   @ValidateIf((o) => false)
   public expirationTimeInDay: number = 0;
@@ -42,7 +43,7 @@ export class CreateFileDto {
     name: string = '',
     extension?: string,
     rawFile: string = '',
-    tags: [] = [],
+    tags: CreateFileTagDto[] | string = [],
     password?: string | null,
     uploadDate?: Date | string | null,
     expirationTimeInDay: number = 0,

@@ -1,3 +1,5 @@
+import { GetTagDto } from "../../tag/dtos/getTagDto";
+
 export class GetFileDto {
   constructor(
     public id: string,
@@ -5,6 +7,7 @@ export class GetFileDto {
     public uploadDate: Date | null,
     public expirationDate: Date | null,
     public hasExpired: boolean,
+    public tags: GetTagDto[],
     public hasPassword: boolean,
     public link: string | null,
   ) {}
