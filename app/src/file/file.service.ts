@@ -4,8 +4,10 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
 import { File } from '../../entities/file';
 import { AuthService } from '../auth/auth.service';
@@ -31,6 +33,7 @@ export class FileService {
 
     try {
       const file = new File();
+      file.id = randomUUID();
       file.name = createFileDto.name;
       file.rawData = this.fileMapper.toBlob(createFileDto.rawFile);
       file.password = createFileDto.password
@@ -39,6 +42,7 @@ export class FileService {
       file.uploadDate = createFileDto.uploadDate
         ? this.toDateOrNull(createFileDto.uploadDate)
         : new Date();
+      file.link = this.authService.generateLink(file.id);
 
       const expirationDate = new Date();
       expirationDate.setDate(
@@ -68,7 +72,13 @@ export class FileService {
     return this.fileMapper.toDto(file);
   }
 
-  async downloadFileById(id: string): Promise<Buffer> {
+  async downloadFileById(
+    id: string,
+    password?: string,
+    jwtToken?: string,
+  ): Promise<Buffer> {
+    // await this.authService.verifyToken(jwtToken);
+
     const file = await this.fileRepository.findOne({ where: { id } });
 
     if (!file) {
@@ -78,6 +88,13 @@ export class FileService {
     if (this.fileMapper.hasFileExpired(file.expirationDate)) {
       //TODO proper exception type
       throw new BadRequestException(`File with id ${id} has expired`);
+    }
+
+    if (
+      file.password &&
+      (!password || !this.authService.comparePassword(password, file.password))
+    ) {
+      throw new UnauthorizedException('Invalid file password');
     }
 
     if (!file.rawData || file.rawData.length === 0) {

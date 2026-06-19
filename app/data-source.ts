@@ -1,6 +1,5 @@
 import { DataSource } from 'typeorm';
 import { FileTag } from './entities/file-tag';
-import { FileType } from './entities/file-type';
 import { FileUser } from './entities/file-user';
 import { File } from './entities/file';
 import { Tag } from './entities/tag';
@@ -17,7 +16,7 @@ export const AppDataSource = new DataSource({
   schema: 'public',
   synchronize: process.env.NODE_ENV !== 'production',
   logging: process.env.NODE_ENV !== 'production',
-  entities: [User, File, Tag, Type, FileUser, FileTag, FileType],
+  entities: [User, File, Tag, Type, FileUser, FileTag],
   migrations: ['data/migrations/*.ts'],
   subscribers: ['src/subscribers/*.ts'],
   extra: {

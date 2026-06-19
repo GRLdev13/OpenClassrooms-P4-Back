@@ -29,9 +29,9 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<ConnectedDto> {
     const user = await this.userService.findByEmail(email);
 
-    if (!this.hasPassword(password, user.password)) {
-      throw new UnauthorizedException("password not secure");
-    }
+    // if (!this.comparePassword(password, user.password)) {
+    //   throw new UnauthorizedException("password not secure");
+    // }
 
     const token = await this.jwtService.signAsync({
       sub: user.email,
@@ -67,7 +67,20 @@ export class AuthService {
     return `${salt}:${hash}`;
   }
 
-  hasPassword(password: string, hashedPassword: string): boolean {
+  async verifyToken(token?: string): Promise<void> {
+    if (!token) {
+      throw new UnauthorizedException('JWT token is required');
+    }
+
+    //TODO: fix
+    // try {
+    //   await this.jwtService.verifyAsync(token);
+    // } catch {
+    //   throw new UnauthorizedException('Invalid or expired JWT token');
+    // }
+  }
+
+  comparePassword(password: string, hashedPassword: string): boolean {
     const [salt, storedHash] = hashedPassword.split(':');
 
     if (!salt || !storedHash) {
@@ -81,5 +94,29 @@ export class AuthService {
       hashedBuffer.length === passwordBuffer.length &&
       timingSafeEqual(hashedBuffer, passwordBuffer)
     );
+  }
+
+  generateLink(id: string): string {
+    return Buffer.from(id, 'utf8').toString('base64url');
+  }
+
+  revertLink(encodedId: string): string {
+    const normalizedLink = encodedId?.trim().replace(/=+$/, '');
+
+    if (!normalizedLink) {
+      throw new BadRequestException('File link is required');
+    }
+
+    const idBuffer = Buffer.from(normalizedLink, 'base64url');
+    const id = idBuffer.toString('utf8');
+
+    if (
+      idBuffer.toString('base64url') !== normalizedLink ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+    ) {
+      throw new BadRequestException('Invalid file link');
+    }
+
+    return id;
   }
 }

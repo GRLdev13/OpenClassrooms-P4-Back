@@ -7,10 +7,12 @@ export class FileMapper {
   toDto(file: File): GetFileDto {
     return new GetFileDto(
       file.id,
-      file.name ?? "unamed file",
-      file.expirationDate,
+      file.name ?? 'unnamed file',
       file.uploadDate,
-      this.hasFileExpired(file?.expirationDate),
+      file.expirationDate,
+      this.hasFileExpired(file.expirationDate),
+      Boolean(file.password),
+      file.link,
     );
   }
 

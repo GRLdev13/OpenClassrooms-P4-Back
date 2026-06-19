@@ -3,24 +3,36 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   ParseFilePipe,
   Post,
   Query,
   StreamableFile,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateFileDto } from './dtos/createFile.dto';
-import { GetFileDto } from './dtos/file.dto';
+import {
+  DownloadFileLinkDto,
+  DownloadFileRequestDto,
+  GetFileDto,
+} from './dtos/file.dto';
 import { FileService } from './file.service';
 import { type Express } from 'express';
 import { FileValidator } from './validators/file.validator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthService } from '../auth/auth.service';
 
 @Controller('file')
+@UseGuards(JwtAuthGuard)
 export class FileController {
-  constructor(private readonly fileService: FileService) {}
+  constructor(
+    private readonly fileService: FileService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -61,10 +73,39 @@ export class FileController {
     return this.fileService.findAll();
   }
 
-  @Get(':id')
-  async downloadById(@Param('id') id: string): Promise<StreamableFile> {
-    const dataFile = await this.fileService.downloadFileById(id);
+  @Post('download')
+  async downloadById(
+    @Body() request: DownloadFileRequestDto,
+    // @Headers('authorization') authorization?: string,
+  ): Promise<StreamableFile> {
+    // const headerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+    // const jwtToken = headerToken ?? request.token;
+    const dataFile = await this.fileService.downloadFileById(
+      request.id,
+      request?.password,
+      // jwtToken,
+    );
+
     return new StreamableFile(dataFile);
+  }
+
+  @Get('link/:link')
+  async downloadByLink(
+    @Param('link') link: string,
+    // @Headers('authorization') authorization?: string,
+  ): Promise<GetFileDto> {
+    // const headerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+    // const jwtToken = headerToken ?? request.token;
+    const id = this.authService.revertLink(link);
+    return this.fileService.findById(id);
+
+    // const dataFile = await this.fileService.downloadFileById(
+    //   fileId,
+    //   request?.password,
+    //   // jwtToken,
+    // );
+
+    // return new StreamableFile(dataFile);
   }
 
   @Delete('delete/:id')

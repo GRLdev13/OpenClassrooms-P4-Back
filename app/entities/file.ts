@@ -22,6 +22,9 @@ export class File extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   password!: string | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  link!: string | null;
+
   @Column({ type: 'timestamp', nullable: true })
   uploadDate!: Date | null;
 
