@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tag } from '../../entities/tag';
 import { AddTagDto } from './dtos/addTagDto';
-import { TagDto } from './dtos/tagDto';
+import { GetTagDto } from './dtos/getTagDto';
 
 @Injectable()
 export class TagService {
@@ -17,7 +17,7 @@ export class TagService {
     private readonly tagRepository: Repository<Tag>,
   ) {}
 
-  async add(addTagDto: AddTagDto): Promise<TagDto> {
+  async add(addTagDto: AddTagDto): Promise<GetTagDto> {
     const name = addTagDto?.name?.trim();
 
     if (!name) {
@@ -45,6 +45,14 @@ export class TagService {
     return this.toDto(savedTag);
   }
 
+  async findAll(): Promise<GetTagDto[]> {
+    const tags = await this.tagRepository.find({
+      order: { name: 'ASC' },
+    });
+
+    return tags.map((tag) => this.toDto(tag));
+  }
+
   async delete(id: string): Promise<{ deleted: boolean }> {
     if (
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -63,7 +71,7 @@ export class TagService {
     return { deleted: true };
   }
 
-  private toDto(tag: Tag): TagDto {
-    return new TagDto(tag.id, tag.name);
+  private toDto(tag: Tag): GetTagDto {
+    return new GetTagDto(tag.id, tag.name);
   }
 }

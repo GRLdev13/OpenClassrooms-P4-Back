@@ -1,4 +1,4 @@
-export class TagDto {
+export class GetTagDto {
   constructor(
     public id: string,
     public name: string,

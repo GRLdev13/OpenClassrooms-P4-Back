@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AddTagDto } from './dtos/addTagDto';
 import { DeleteTagDto } from './dtos/deleteTagDto';
-import { TagDto } from './dtos/tagDto';
+import { GetTagDto } from './dtos/getTagDto';
 import { TagService } from './tag.service';
 
 @Controller('tag')
@@ -11,8 +11,13 @@ export class TagController {
   constructor(private readonly tagService: TagService) {}
 
   @Post('add')
-  async add(@Body() request: AddTagDto): Promise<TagDto> {
+  async add(@Body() request: AddTagDto): Promise<GetTagDto> {
     return this.tagService.add(request);
+  }
+
+  @Get('all')
+  async findAll(): Promise<GetTagDto[]> {
+    return this.tagService.findAll();
   }
 
   @Delete('delete')
