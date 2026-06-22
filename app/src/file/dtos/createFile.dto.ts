@@ -39,6 +39,9 @@ export class CreateFileDto {
   @ValidateIf((o) => false)
   public expirationTimeInDay: number = 0;
 
+  @ValidateIf((o) => false)
+  public idUser: string;
+
   constructor(
     name: string = '',
     extension?: string,
@@ -47,6 +50,7 @@ export class CreateFileDto {
     password?: string | null,
     uploadDate?: Date | string | null,
     expirationTimeInDay: number = 0,
+    idUser: string = '',
   ) {
     this.name = name;
     this.extension = extension;
@@ -55,5 +59,6 @@ export class CreateFileDto {
     this.password = password;
     this.uploadDate = uploadDate;
     this.expirationTimeInDay = expirationTimeInDay;
+    this.idUser = idUser;
   }
 }

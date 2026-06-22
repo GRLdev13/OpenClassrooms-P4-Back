@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   ParseFilePipe,
   Post,
@@ -22,6 +21,8 @@ import { FileValidator } from './validators/file.validator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { GetFileDto } from './dtos/getFileDto';
+import { RequestFileDto } from './dtos/requestFilesDto';
+
 
 @Controller('file')
 @UseGuards(JwtAuthGuard)
@@ -60,9 +61,10 @@ export class FileController {
     return this.fileService.findById(id);
   }
 
-  @Get('by-user-id')
-  async findByUserId(@Query('id') id: string): Promise<GetFileDto[]> {
-    return this.fileService.findByUserId(id);
+  @Post('')
+  async findByUserId(@Body() request : RequestFileDto): Promise<GetFileDto[]> {
+    //todo Check token
+    return this.fileService.findByUserId(request.id);
   }
 
   @Get('all')
@@ -110,9 +112,9 @@ export class FileController {
     return this.fileService.deleteById(id);
   }
 
-  //TODO later: share file with another account.
-  @Get('share-with')
-  async shareWith(@Query('id') id: string): Promise<GetFileDto[]> {
-    return this.fileService.findByUserId(id);
-  }
+  // //TODO later: share file with another account.
+  // @Get('share-with')
+  // async shareWith(@Query('id') id: string): Promise<GetFileDto[]> {
+  //   return this.fileService.findByUserId(id);
+  // }
 }

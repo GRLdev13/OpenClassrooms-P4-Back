@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { File } from '../../entities/file';
 import { FileTag } from '../../entities/file-tag';
+import { FileUser } from '../../entities/file-user';
 import { Tag } from '../../entities/tag';
 import { AuthService } from '../auth/auth.service';
 import { CreateFileDto } from './dtos/createFile.dto';
@@ -23,8 +24,6 @@ export class FileService {
   constructor(
     @InjectRepository(File)
     private readonly fileRepository: Repository<File>,
-    @InjectRepository(Tag)
-    private readonly tagRepository: Repository<Tag>,
     private readonly fileMapper: FileMapper,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
@@ -34,6 +33,10 @@ export class FileService {
     if (createFileDto == null || !createFileDto.rawFile) {
       //todo better error
       throw new BadRequestException(`File payload is required`);
+    }
+
+    if (!createFileDto.idUser) {
+      throw new BadRequestException(`File user reference is required`);
     }
 
     try {
@@ -54,16 +57,34 @@ export class FileService {
 
       file.expirationDate = expirationDate;
       await this.fileRepository.manager.transaction(async (manager) => {
-        let created = await manager.save(File, file);
-        file.link = this.authService.generateLink(created.id);
-        // await this.createFileTags(manager, file, createFileDto.tags);
-        await this.tagsCustomMage(createFileDto, file.id);
+        const createdFile = await manager.save(File, file);
+        createdFile.link = this.authService.generateLink(createdFile.id);
+        await manager.save(File, createdFile);
+        await this.linkFileToUser(manager, createdFile, createFileDto.idUser);
+        await this.tagsCustomMage(
+          manager,
+          createdFile,
+          createFileDto.tags,
+        );
       });
     } catch (error) {
       throw new BadRequestException(`File failed samer: ` + error);
       return false;
     }
     return true;
+  }
+
+  private async linkFileToUser(
+    manager: EntityManager,
+    file: File,
+    idUser: string,
+  ): Promise<void> {
+    const fileUser = new FileUser();
+    fileUser.idFile = file.id;
+    fileUser.idUser = idUser;
+    fileUser.file = file;
+
+    await manager.save(FileUser, fileUser);
   }
 
   async findById(id: string): Promise<GetFileDto> {
@@ -161,47 +182,30 @@ export class FileService {
     return this.fileMapper.toDtoArray(files);
   }
 
-  private async tagsCustomMage(createFileDto: CreateFileDto, idFile: string) {
-    if (!createFileDto.tags || createFileDto.tags.length == 0) {
-      console.log('no tags linked');
-      return;
+  private async tagsCustomMage(
+    manager: EntityManager,
+    file: File,
+    rawTags?: CreateFileTagDto[] | string,
+  ): Promise<void> {
+    const tagInputs = this.normalizeTags(rawTags);
+    const linkedTagIds = new Set<string>();
+
+    for (const tagInput of tagInputs) {
+      const tag = await this.findOrCreateTag(manager, tagInput);
+
+      if (linkedTagIds.has(tag.id)) {
+        continue;
+      }
+
+      const fileTag = new FileTag();
+      fileTag.idFile = file.id;
+      fileTag.idTag = tag.id;
+      fileTag.file = file;
+      fileTag.tag = tag;
+
+      await manager.save(FileTag, fileTag);
+      linkedTagIds.add(tag.id);
     }
-    //préparation des objets de reqêtes
-    let insertQs: [{ name: string }] | any = null;
-    let tagLinkInsert: [{ idTag: string; idFile: string }] | any = null;
-
-    const correctTags = this.normalizeTags(createFileDto.tags);
-    const tagNames = correctTags
-      .map((tag) => tag.name)
-      .filter((name) => name.length > 0);
-
-    //get existing tags
-    const existingTags = await this.tagRepository
-      .createQueryBuilder('tag')
-      .where('tag.name IN (:...names)', { names: tagNames })
-      .getMany();
-
-    const existingIds = new Set(existingTags.map((tag) => tag.id));
-
-    const newTags = correctTags.filter((tag) => !existingIds.has(tag.id));
-
-    newTags.map((x) => {
-      insertQs.push({ idTag: x.id, idFile: idFile });
-    });
-
-    let created = await this.tagRepository
-      .createQueryBuilder()
-      .insert()
-      .into(Tag)
-      .values(insertQs)
-      .execute();
-
-    await this.tagRepository
-      .createQueryBuilder()
-      .insert()
-      .into(FileTag)
-      .values(tagLinkInsert)
-      .execute();
   }
 
   private normalizeTags(
