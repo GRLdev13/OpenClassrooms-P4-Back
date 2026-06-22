@@ -1,6 +1,8 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { File } from '../../entities/file';
+import { FileTag } from '../../entities/file-tag';
+import { Tag } from '../../entities/tag';
 import { AuthModule } from '../auth/auth.module';
 import { FileController } from './file.controller';
 import { FileMapper } from './file.mapper';
@@ -8,7 +10,10 @@ import { FileService } from './file.service';
 import { FileValidator } from './validators/file.validator';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([File]), forwardRef(() => AuthModule)],
+  imports: [
+    TypeOrmModule.forFeature([File, FileTag, Tag]),
+    forwardRef(() => AuthModule),
+  ],
   controllers: [FileController],
   providers: [FileService, FileMapper, FileValidator],
   exports: [FileService, FileMapper],

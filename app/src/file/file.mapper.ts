@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { File } from '../../entities/file';
-import { GetFileDto } from './dtos/file.dto';
+import { GetFileDto } from './dtos/getFileDto';
+import { GetTagDto } from '../tag/dtos/getTagDto';
 
 @Injectable()
 export class FileMapper {
@@ -11,6 +12,11 @@ export class FileMapper {
       file.uploadDate,
       file.expirationDate,
       this.hasFileExpired(file.expirationDate),
+      (file.fileTags ?? [])
+        .filter((fileTag) => Boolean(fileTag.tag))
+        .map(
+          (fileTag) => new GetTagDto(fileTag.tag.id, fileTag.tag.name),
+        ),
       Boolean(file.password),
       file.link,
     );

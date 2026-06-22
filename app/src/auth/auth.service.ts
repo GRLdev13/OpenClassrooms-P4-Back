@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
-import { ConnectedDto } from '../user/dtos/user.dto';
+import { ConnectedDto } from '../user/dtos/connected.dto';
 import { UserMapper } from '../user/user.mapper';
 import { UserService } from '../user/user.service';
 

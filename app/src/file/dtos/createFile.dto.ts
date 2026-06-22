@@ -34,7 +34,7 @@ export class CreateFileDto {
   public uploadDate?: Date | string | null;
 
   @ValidateIf((o) => false)
-  public tags?: CreateFileTagDto[] | string = [];
+  public tags?: CreateFileTagDto[] = [];
 
   @ValidateIf((o) => false)
   public expirationTimeInDay: number = 0;
@@ -43,7 +43,7 @@ export class CreateFileDto {
     name: string = '',
     extension?: string,
     rawFile: string = '',
-    tags: CreateFileTagDto[] | string = [],
+    tags: CreateFileTagDto[] = [],
     password?: string | null,
     uploadDate?: Date | string | null,
     expirationTimeInDay: number = 0,

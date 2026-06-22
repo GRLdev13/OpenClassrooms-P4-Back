@@ -7,7 +7,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomUUID } from 'crypto';
 import { EntityManager, Repository } from 'typeorm';
 import { File } from '../../entities/file';
 import { FileTag } from '../../entities/file-tag';
@@ -17,26 +16,28 @@ import { CreateFileDto } from './dtos/createFile.dto';
 import { CreateFileTagDto } from './dtos/createFileTagDto';
 import { GetFileDto } from './dtos/getFileDto';
 import { FileMapper } from './file.mapper';
+import { AddTagDto } from '../tag/dtos/addTagDto';
 
 @Injectable()
 export class FileService {
   constructor(
     @InjectRepository(File)
     private readonly fileRepository: Repository<File>,
+    @InjectRepository(Tag)
+    private readonly tagRepository: Repository<Tag>,
     private readonly fileMapper: FileMapper,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
   ) {}
 
   async create(createFileDto: CreateFileDto): Promise<boolean> {
-    if (createFileDto == null) {
+    if (createFileDto == null || !createFileDto.rawFile) {
       //todo better error
-      throw new NotFoundException('File payload is required');
+      throw new BadRequestException(`File payload is required`);
     }
 
     try {
       const file = new File();
-      file.id = randomUUID();
       file.name = createFileDto.name;
       file.rawData = this.fileMapper.toBlob(createFileDto.rawFile);
       file.password = createFileDto.password
@@ -45,7 +46,6 @@ export class FileService {
       file.uploadDate = createFileDto.uploadDate
         ? this.toDateOrNull(createFileDto.uploadDate)
         : new Date();
-      file.link = this.authService.generateLink(file.id);
 
       const expirationDate = new Date();
       expirationDate.setDate(
@@ -54,10 +54,13 @@ export class FileService {
 
       file.expirationDate = expirationDate;
       await this.fileRepository.manager.transaction(async (manager) => {
-        await manager.save(File, file);
-        await this.createFileTags(manager, file, createFileDto.tags);
+        let created = await manager.save(File, file);
+        file.link = this.authService.generateLink(created.id);
+        // await this.createFileTags(manager, file, createFileDto.tags);
+        await this.tagsCustomMage(createFileDto, file.id);
       });
     } catch (error) {
+      throw new BadRequestException(`File failed samer: ` + error);
       return false;
     }
     return true;
@@ -121,12 +124,9 @@ export class FileService {
   async findByUserId(userId: string): Promise<GetFileDto[]> {
     const files = await this.fileRepository
       .createQueryBuilder('file')
-      .innerJoin(
-        'file.fileUsers',
-        'fileUser',
-        'fileUser.idUser = :userId',
-        { userId },
-      )
+      .innerJoin('file.fileUsers', 'fileUser', 'fileUser.idUser = :userId', {
+        userId,
+      })
       .leftJoinAndSelect('file.fileTags', 'fileTag')
       .leftJoinAndSelect('fileTag.tag', 'tag')
       .distinct(true)
@@ -161,31 +161,114 @@ export class FileService {
     return this.fileMapper.toDtoArray(files);
   }
 
-  private async createFileTags(
-    manager: EntityManager,
-    file: File,
+  private async tagsCustomMage(createFileDto: CreateFileDto, idFile: string) {
+    if (!createFileDto.tags || createFileDto.tags.length == 0) {
+      console.log('no tags linked');
+      return;
+    }
+    //préparation des objets de reqêtes
+    let insertQs: [{ name: string }] | any = null;
+    let tagLinkInsert: [{ idTag: string; idFile: string }] | any = null;
+
+    const correctTags = this.normalizeTags(createFileDto.tags);
+    const tagNames = correctTags
+      .map((tag) => tag.name)
+      .filter((name) => name.length > 0);
+
+    //get existing tags
+    const existingTags = await this.tagRepository
+      .createQueryBuilder('tag')
+      .where('tag.name IN (:...names)', { names: tagNames })
+      .getMany();
+
+    const existingIds = new Set(existingTags.map((tag) => tag.id));
+
+    const newTags = correctTags.filter((tag) => !existingIds.has(tag.id));
+
+    newTags.map((x) => {
+      insertQs.push({ idTag: x.id, idFile: idFile });
+    });
+
+    let created = await this.tagRepository
+      .createQueryBuilder()
+      .insert()
+      .into(Tag)
+      .values(insertQs)
+      .execute();
+
+    await this.tagRepository
+      .createQueryBuilder()
+      .insert()
+      .into(FileTag)
+      .values(tagLinkInsert)
+      .execute();
+  }
+
+  private normalizeTags(
     rawTags?: CreateFileTagDto[] | string,
-  ): Promise<void> {
-    const tagInputs = this.normalizeTags(rawTags);
-    const linkedTagIds = new Set<string>();
+  ): CreateFileTagDto[] {
+    if (!rawTags) {
+      return [];
+    }
 
-    for (const tagInput of tagInputs) {
-      const tag = await this.findOrCreateTag(manager, tagInput);
+    let tags: unknown = rawTags;
 
-      if (linkedTagIds.has(tag.id)) {
-        continue;
+    if (typeof rawTags === 'string') {
+      const value = rawTags.trim();
+
+      if (!value) {
+        return [];
       }
 
-      const fileTag = manager.create(FileTag, {
-        idFile: file.id,
-        idTags: tag.id,
-        file,
-        tag,
-      });
-
-      await manager.save(FileTag, fileTag);
-      linkedTagIds.add(tag.id);
+      try {
+        tags = JSON.parse(value);
+      } catch {
+        tags = [value];
+      }
     }
+
+    const tagArray: unknown[] = Array.isArray(tags) ? tags : [tags];
+
+    const normalizedTags = tagArray.map((tag, index) => {
+      if (typeof tag === 'string') {
+        const name = tag.trim();
+
+        if (!name) {
+          throw new BadRequestException(`Tag at index ${index} is empty`);
+        }
+
+        return { id: '', name };
+      }
+
+      if (tag && typeof tag === 'object') {
+        const value = tag as Record<string, unknown>;
+        const id = typeof value.id === 'string' ? value.id.trim() : '';
+        const name = typeof value.name === 'string' ? value.name.trim() : '';
+
+        if (!id && !name) {
+          throw new BadRequestException(
+            `Tag at index ${index} must have an id or name`,
+          );
+        }
+
+        return {
+          id,
+          name,
+        };
+      }
+
+      throw new BadRequestException(`Invalid tag at index ${index}`);
+    });
+
+    return normalizedTags.filter(
+      (tag, index, tags) =>
+        tags.findIndex(
+          (candidate) =>
+            (tag.id !== '' && candidate.id === tag.id) ||
+            (tag.name !== '' &&
+              candidate.name.toLowerCase() === tag.name.toLowerCase()),
+        ) === index,
+    );
   }
 
   private async findOrCreateTag(
@@ -218,48 +301,6 @@ export class FileService {
     }
 
     return tagRepository.save(tagRepository.create({ name }));
-  }
-
-  private normalizeTags(
-    rawTags?: CreateFileTagDto[] | string,
-  ): CreateFileTagDto[] {
-    if (!rawTags) {
-      return [];
-    }
-
-    let tags: unknown = rawTags;
-
-    if (typeof rawTags === 'string') {
-      const value = rawTags.trim();
-
-      if (!value) {
-        return [];
-      }
-
-      try {
-        tags = JSON.parse(value);
-      } catch {
-        tags = [value];
-      }
-    }
-
-    const tagArray: unknown[] = Array.isArray(tags) ? tags : [tags];
-
-    return tagArray.map((tag) => {
-      if (typeof tag === 'string') {
-        return { name: tag };
-      }
-
-      if (tag && typeof tag === 'object') {
-        const value = tag as Record<string, unknown>;
-        return {
-          id: typeof value.id === 'string' ? value.id : undefined,
-          name: typeof value.name === 'string' ? value.name : undefined,
-        };
-      }
-
-      throw new BadRequestException('Invalid tag value');
-    });
   }
 
   private toDateOrNull(value: Date | string | null | undefined): Date | null {

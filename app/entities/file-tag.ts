@@ -15,14 +15,14 @@ export class FileTag extends BaseEntity {
   id!: string;
 
   @Column({ type: 'uuid' })
-  idTags!: string;
+  idTag!: string;
 
   @Column({ type: 'uuid' })
   idFile!: string;
 
   // Relationships
   @ManyToOne(() => Tag, (tag) => tag.fileTags, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'idTags' })
+  @JoinColumn({ name: 'idTag' })
   tag!: Tag;
 
   @ManyToOne(() => File, (file) => file.fileTags, { onDelete: 'CASCADE' })

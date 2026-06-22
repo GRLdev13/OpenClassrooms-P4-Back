@@ -14,7 +14,7 @@ async function bootstrap() {
     console.log('✓ uuid-ossp extension enabled (globally available)');
   }
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule,{snapshot: true});
   const allowedOrigins = (process.env.CORS_ORIGIN ?? '')
     .split(',')
     .map((origin) => origin.trim())
