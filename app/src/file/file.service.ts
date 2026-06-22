@@ -17,13 +17,14 @@ import { CreateFileDto } from './dtos/createFile.dto';
 import { CreateFileTagDto } from './dtos/createFileTagDto';
 import { GetFileDto } from './dtos/getFileDto';
 import { FileMapper } from './file.mapper';
-import { AddTagDto } from '../tag/dtos/addTagDto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class FileService {
   constructor(
     @InjectRepository(File)
     private readonly fileRepository: Repository<File>,
+    private readonly userService: UserService,
     private readonly fileMapper: FileMapper,
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
@@ -35,8 +36,15 @@ export class FileService {
       throw new BadRequestException(`File payload is required`);
     }
 
-    if (!createFileDto.idUser) {
+    if (!createFileDto.email) {
       throw new BadRequestException(`File user reference is required`);
+    }
+
+    let userId = (await this.userService.findByEmail(createFileDto.email)).id;
+
+    if(!userId)
+    {
+      throw new BadRequestException(`User not found somehow`);
     }
 
     try {
@@ -60,12 +68,8 @@ export class FileService {
         const createdFile = await manager.save(File, file);
         createdFile.link = this.authService.generateLink(createdFile.id);
         await manager.save(File, createdFile);
-        await this.linkFileToUser(manager, createdFile, createFileDto.idUser);
-        await this.tagsCustomMage(
-          manager,
-          createdFile,
-          createFileDto.tags,
-        );
+        await this.linkFileToUser(manager, createdFile, userId);
+        await this.tagsCustomMage(manager, createdFile, createFileDto.tags);
       });
     } catch (error) {
       throw new BadRequestException(`File failed samer: ` + error);
@@ -142,18 +146,10 @@ export class FileService {
     return this.fileMapper.toDtoArray(files);
   }
 
-  async findByUserId(userId: string): Promise<GetFileDto[]> {
-    const files = await this.fileRepository
-      .createQueryBuilder('file')
-      .innerJoin('file.fileUsers', 'fileUser', 'fileUser.idUser = :userId', {
-        userId,
-      })
-      .leftJoinAndSelect('file.fileTags', 'fileTag')
-      .leftJoinAndSelect('fileTag.tag', 'tag')
-      .distinct(true)
-      .getMany();
+  async findByUserEmail(userEmail: string): Promise<GetFileDto[]> {
+    const user = await this.userService.findByEmail(userEmail);
 
-    return this.fileMapper.toDtoArray(files);
+    return this.fileMapper.toDtoArray(user.fileUsers.map(x => x.file));
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {

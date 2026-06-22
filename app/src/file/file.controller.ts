@@ -64,7 +64,7 @@ export class FileController {
   @Post('')
   async findByUserId(@Body() request : RequestFileDto): Promise<GetFileDto[]> {
     //todo Check token
-    return this.fileService.findByUserId(request.id);
+    return this.fileService.findByUserEmail(request.email);
   }
 
   @Get('all')
