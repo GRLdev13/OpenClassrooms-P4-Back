@@ -1,17 +1,19 @@
-import { Controller, Get, Query, Post, Body } from '@nestjs/common';
-import { UserService } from './user.service';
+import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import { setAuthCookie } from '../auth/auth-cookie';
+import { AuthService } from '../auth/auth.service';
 import { ConnectedDto } from './dtos/connected.dto';
 import { LoginUserDto } from './dtos/login-user.dto';
 import { UserDto } from './dtos/user.dto';
 import { UserMapper } from './user.mapper';
-import { AuthService } from '../auth/auth.service';
+import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly userMapper: UserMapper,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
   ) {}
 
   @Get('health')
@@ -41,13 +43,18 @@ export class UserController {
   }
 
   @Post('login')
-  async login(@Body() connectRequest : LoginUserDto): Promise<ConnectedDto> {
-    return this.authService.signIn(connectRequest.email, connectRequest.passwword)
-  }
+  async login(
+    @Body() connectRequest: LoginUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<Omit<ConnectedDto, 'token'>> {
+    const connectedUser = await this.authService.signIn(
+      connectRequest.email,
+      connectRequest.password,
+    );
+    const { token, ...user } = connectedUser;
 
-  @Post('create')
-  async create(): Promise<UserDto[]> {
-    const users = await this.userService.create();
-    return this.userMapper.toDtoArray(users);
+    setAuthCookie(response, token);
+
+    return user;
   }
 }

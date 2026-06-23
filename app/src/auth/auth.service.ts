@@ -10,9 +10,14 @@ import { ConnectedDto } from '../user/dtos/connected.dto';
 import { UserMapper } from '../user/user.mapper';
 import { UserService } from '../user/user.service';
 
+const jwtSecret = process.env.JWT_SECRET;
+
+if (!jwtSecret && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET must be set in production');
+}
+
 export const jwtConstants = {
-  secret:
-    'DO NOT USE THIS VALUE. INSTEAD, CREATE A COMPLEX SECRET AND KEEP IT SAFE OUTSIDE OF THE SOURCE CODE.',
+  secret: jwtSecret ?? 'development-only-jwt-secret',
 };
 
 @Injectable()
@@ -29,20 +34,33 @@ export class AuthService {
   async signIn(email: string, password: string): Promise<ConnectedDto> {
     const user = await this.userService.findByEmail(email);
 
-    // if (!this.comparePassword(password, user.password)) {
-    //   throw new UnauthorizedException("password not secure");
-    // }
+    if (!this.comparePassword(password, user.password)) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
     const token = await this.jwtService.signAsync({
       sub: user.email,
-      password: user.password,
     });
 
     return this.userMapper.fromUserToConnected(user, token);
   }
 
-  async create(email: string, password: string, firstname: string, lastname: string): Promise<ConnectedDto> {
-    if (await this.userService.existsByEmail(email)) {
+  async create(
+    email: string,
+    password: string,
+    passwordConfirmation: string,
+    firstName: string,
+    lastName: string,
+  ): Promise<ConnectedDto> {
+    if (password !== passwordConfirmation) {
+      throw new BadRequestException(
+        'Password and password confirmation do not match',
+      );
+    }
+
+    const existingUser = await this.userService.findByEmailOrNull(email);
+
+    if (existingUser) {
       throw new ConflictException('Email already used');
     }
 
@@ -51,10 +69,9 @@ export class AuthService {
     }
 
     const hashedPassword = this.hashPassword(password);
-    const user = await this.userService.createUser(email, hashedPassword, firstname, lastname);
+    const user = await this.userService.createUser(email, hashedPassword, firstName, lastName);
     const token = await this.jwtService.signAsync({
       sub: user.email,
-      password: hashedPassword,
     });
 
     return this.userMapper.fromUserToConnected(user, token);
@@ -72,12 +89,11 @@ export class AuthService {
       throw new UnauthorizedException('JWT token is required');
     }
 
-    //TODO: fix
-    // try {
-    //   await this.jwtService.verifyAsync(token);
-    // } catch {
-    //   throw new UnauthorizedException('Invalid or expired JWT token');
-    // }
+    try {
+      await this.jwtService.verifyAsync(token);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired JWT token');
+    }
   }
 
   comparePassword(password: string, hashedPassword: string): boolean {

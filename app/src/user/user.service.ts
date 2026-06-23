@@ -31,7 +31,17 @@ export class UserService {
   }
 
   async findByEmail(email: string): Promise<User> {
-    const user = await this.userRepository.findOne({
+    const user = await this.findByEmailOrNull(email);
+
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+
+    return user;
+  }
+
+  async findByEmailOrNull(email: string): Promise<User | null> {
+    return this.userRepository.findOne({
       where: { email },
       relations: {
         fileUsers: {
@@ -39,10 +49,6 @@ export class UserService {
         },
       },
     });
-    if (!user) {
-      throw new NotFoundException(`User with email ${email} not found`);
-    }
-    return user;
   }
 
   async findById(id: string): Promise<User> {
@@ -62,16 +68,17 @@ export class UserService {
     return this.userRepository.find();
   }
 
-  async existsByEmail(email: string): Promise<boolean> {
-    return this.userRepository.exists({ where: { email } });
-  }
-
-  async createUser(email: string, password: string, firstname: string, lastname: string): Promise<User> {
+  async createUser(
+    email: string,
+    password: string,
+    firstname: string,
+    lastname: string,
+  ): Promise<User> {
     const user = this.userRepository.create({
       email,
       password,
-      firstname: firstname,
-      lastname: lastname,
+      firstname,
+      lastname,
       picture: null,
       hasVerifiedEmail: false,
       fileUsers: [],

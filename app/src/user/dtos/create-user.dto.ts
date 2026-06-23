@@ -1,18 +1,21 @@
 export class CreateUserDto {
   email: string;
   password: string;
-  firstname: string;
-  lastname: string;
+  passwordConfirmation: string;
+  firstName: string;
+  lastName: string;
 
   constructor(
     email: string,
     password: string,
-    firstname: string,
-    lastname: string,
+    firstName: string,
+    lastName: string,
+    passwordConfirmation: string,
   ) {
     this.email = email;
     this.password = password;
-    this.firstname = password;
-    this.lastname = password;
+    this.passwordConfirmation = passwordConfirmation;
+    this.firstName = firstName;
+    this.lastName = lastName;
   }
 }

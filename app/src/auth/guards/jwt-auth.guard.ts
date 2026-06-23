@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
+import { AUTH_COOKIE_NAME } from '../auth-cookie';
 import { AuthService } from '../auth.service';
 
 @Injectable()
@@ -13,13 +14,10 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const authorization = request.headers.authorization;
-    const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+    const token = request.cookies?.[AUTH_COOKIE_NAME] as string | undefined;
 
     if (!token) {
-      throw new UnauthorizedException(
-        'Authorization header with Bearer token is required',
-      );
+      throw new UnauthorizedException('Authentication cookie is required');
     }
 
     await this.authService.verifyToken(token);
