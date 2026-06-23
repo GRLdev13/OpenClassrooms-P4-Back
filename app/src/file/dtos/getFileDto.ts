@@ -9,6 +9,6 @@ export class GetFileDto {
     public hasExpired: boolean,
     public tags: GetTagDto[],
     public hasPassword: boolean,
-    public link: string | null,
+    public link: string | null
   ) {}
 }

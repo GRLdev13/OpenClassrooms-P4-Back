@@ -57,10 +57,13 @@ export class FileService {
         ? this.toDateOrNull(createFileDto.uploadDate)
         : new Date();
 
-      const expirationDate = new Date();
-      expirationDate.setDate(
-        expirationDate.getDate() + createFileDto.expirationTimeInDay,
+      const expirationDate = new Date(
+        (file.uploadDate ?? new Date()).getTime(),
       );
+      expirationDate.setDate(
+        expirationDate.getDate() + Number(createFileDto.expirationTimeInDay),
+      );
+      expirationDate.setMilliseconds(0);
 
       file.expirationDate = expirationDate;
       await this.fileRepository.manager.transaction(async (manager) => {
