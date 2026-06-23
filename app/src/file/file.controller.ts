@@ -25,7 +25,6 @@ import { RequestFileDto } from './dtos/requestFilesDto';
 
 
 @Controller('file')
-@UseGuards(CookieAuthGuard)
 export class FileController {
   constructor(
     private readonly fileService: FileService,
@@ -33,6 +32,7 @@ export class FileController {
   ) {}
 
   @Post('upload')
+  @UseGuards(CookieAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @Body(FileValidator) body: CreateFileDto,
@@ -40,8 +40,6 @@ export class FileController {
     file: Express.Multer.File,
   ): Promise<GetFileDto[]> {
     console.log('File body parameters: ', body);
-    //TODO: Set the "good data" of file name.
-    //TODO: check file extensions and everything.
     const createFileDto = {
       ...body,
       rawFile: file.buffer.toString('base64'),
@@ -56,22 +54,13 @@ export class FileController {
     }
   }
 
-  @Get('by-id')
-  async findById(@Query('id') id: string): Promise<GetFileDto> {
-    return this.fileService.findById(id);
-  }
-
-  @Post('')
+    @Post('')
   async findByUserId(@Body() request : RequestFileDto): Promise<GetFileDto[]> {
     return this.fileService.findByUserEmail(request.email);
   }
 
-  @Get('all')
-  async findAll(): Promise<GetFileDto[]> {
-    return this.fileService.findAll();
-  }
-
   @Post('download')
+  @UseGuards(CookieAuthGuard)
   async downloadById(
     @Body() request: DownloadFileRequestDto,
   ): Promise<StreamableFile> {
@@ -84,6 +73,7 @@ export class FileController {
   }
 
   @Get('link/:link')
+  @UseGuards(CookieAuthGuard)
   async downloadByLink(
     @Param('link') link: string,
   ): Promise<GetFileDto> {
@@ -92,6 +82,7 @@ export class FileController {
   }
 
   @Delete('delete/:id')
+  @UseGuards(CookieAuthGuard)
   async deleteById(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.fileService.deleteById(id);
   }

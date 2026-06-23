@@ -45,7 +45,11 @@ export class UserService {
       where: { email },
       relations: {
         fileUsers: {
-          file: true,
+          file: {
+            fileTags: {
+              tag: true,
+            },
+          },
         },
       },
     });
