@@ -91,7 +91,14 @@ export class FileService {
   }
 
   async findById(id: string): Promise<GetFileDto> {
-    const file = await this.fileRepository.findOne({ where: { id } });
+    const file = await this.fileRepository.findOne({
+      where: { id },
+      relations: {
+        fileTags: {
+          tag: true,
+        },
+      },
+    });
 
     if (!file) {
       throw new NotFoundException(`File with id ${id} not found`);
