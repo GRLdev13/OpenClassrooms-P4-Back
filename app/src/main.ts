@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AppDataSource } from '../data-source';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   // Initialize database connection and create extension BEFORE NestJS app
@@ -14,11 +15,13 @@ async function bootstrap() {
     console.log('✓ uuid-ossp extension enabled (globally available)');
   }
 
-  const app = await NestFactory.create(AppModule,{snapshot: true});
+  const app = await NestFactory.create(AppModule, { snapshot: true });
   const allowedOrigins = (process.env.CORS_ORIGIN ?? '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  app.use(cookieParser());
 
   app.enableCors({
     origin: (origin, callback) => {
