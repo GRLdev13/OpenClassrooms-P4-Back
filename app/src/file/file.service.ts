@@ -42,8 +42,7 @@ export class FileService {
 
     let userId = (await this.userService.findByEmail(createFileDto.email)).id;
 
-    if(!userId)
-    {
+    if (!userId) {
       throw new BadRequestException(`User not found somehow`);
     }
 
@@ -109,10 +108,7 @@ export class FileService {
   async downloadFileById(
     id: string,
     password?: string,
-    jwtToken?: string,
   ): Promise<Buffer> {
-    // await this.authService.verifyToken(jwtToken);
-
     const file = await this.fileRepository.findOne({ where: { id } });
 
     if (!file) {
@@ -149,7 +145,7 @@ export class FileService {
   async findByUserEmail(userEmail: string): Promise<GetFileDto[]> {
     const user = await this.userService.findByEmail(userEmail);
 
-    return this.fileMapper.toDtoArray(user.fileUsers.map(x => x.file));
+    return this.fileMapper.toDtoArray(user.fileUsers.map((x) => x.file));
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {
@@ -163,12 +159,7 @@ export class FileService {
   }
 
   //TODO: share a file with someone else
-  async shareWith(
-    userId: string,
-    fileId: string,
-    fileToken: string,
-  ): Promise<GetFileDto[]> {
-    //TODO: security with file token
+  async shareWith(userId: string): Promise<GetFileDto[]> {
     const files = await this.fileRepository
       .createQueryBuilder('file')
       .innerJoin('file.fileUsers', 'fileUser')

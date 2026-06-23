@@ -20,6 +20,11 @@ export const jwtConstants = {
   secret: jwtSecret ?? 'development-only-jwt-secret',
 };
 
+export interface AuthenticatedSession {
+  user: ConnectedDto;
+  sessionCookie: string;
+}
+
 @Injectable()
 export class AuthService {
   private readonly passwordSaltLength = 16;
@@ -31,18 +36,21 @@ export class AuthService {
     private readonly userMapper: UserMapper,
   ) {}
 
-  async signIn(email: string, password: string): Promise<ConnectedDto> {
+  async signIn(email: string, password: string): Promise<AuthenticatedSession> {
     const user = await this.userService.findByEmail(email);
 
     if (!this.comparePassword(password, user.password)) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const token = await this.jwtService.signAsync({
+    const sessionCookie = await this.jwtService.signAsync({
       sub: user.email,
     });
 
-    return this.userMapper.fromUserToConnected(user, token);
+    return {
+      user: this.userMapper.fromUserToConnected(user),
+      sessionCookie,
+    };
   }
 
   async create(
@@ -51,7 +59,7 @@ export class AuthService {
     passwordConfirmation: string,
     firstName: string,
     lastName: string,
-  ): Promise<ConnectedDto> {
+  ): Promise<AuthenticatedSession> {
     if (password !== passwordConfirmation) {
       throw new BadRequestException(
         'Password and password confirmation do not match',
@@ -70,11 +78,14 @@ export class AuthService {
 
     const hashedPassword = this.hashPassword(password);
     const user = await this.userService.createUser(email, hashedPassword, firstName, lastName);
-    const token = await this.jwtService.signAsync({
+    const sessionCookie = await this.jwtService.signAsync({
       sub: user.email,
     });
 
-    return this.userMapper.fromUserToConnected(user, token);
+    return {
+      user: this.userMapper.fromUserToConnected(user),
+      sessionCookie,
+    };
   }
 
   hashPassword(password: string): string {
@@ -84,15 +95,17 @@ export class AuthService {
     return `${salt}:${hash}`;
   }
 
-  async verifyToken(token?: string): Promise<void> {
-    if (!token) {
-      throw new UnauthorizedException('JWT token is required');
+  async verifySession(sessionCookie?: string): Promise<void> {
+    if (!sessionCookie) {
+      throw new UnauthorizedException('Authentication cookie is required');
     }
 
     try {
-      await this.jwtService.verifyAsync(token);
+      await this.jwtService.verifyAsync(sessionCookie);
     } catch {
-      throw new UnauthorizedException('Invalid or expired JWT token');
+      throw new UnauthorizedException(
+        'Authentication cookie is invalid or expired',
+      );
     }
   }
 

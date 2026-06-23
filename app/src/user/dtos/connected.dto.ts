@@ -6,7 +6,6 @@ export class ConnectedDto {
     public email: string,
     public firstName: string,
     public lastName: string,
-    public token: string,
     public files: GetFileDto[] = [],
     public picture = '',
   ) {}

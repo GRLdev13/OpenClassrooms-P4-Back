@@ -18,13 +18,12 @@ export class UserMapper {
     return users.map((user) => this.toDto(user));
   }
 
-  fromUserToConnected(user: User, token = ''): ConnectedDto {
+  fromUserToConnected(user: User): ConnectedDto {
     return new ConnectedDto(
       user.id,
       user.email,
       user.firstname,
       user.lastname,
-      token,
       this.fileMapper.toDtoArray(
         (user.fileUsers ?? [])
           .map((fileUser) => fileUser.file)

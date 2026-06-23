@@ -18,14 +18,14 @@ import { DownloadFileRequestDto } from './dtos/downloadFileRequestDto';
 import { FileService } from './file.service';
 import { type Express } from 'express';
 import { FileValidator } from './validators/file.validator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { GetFileDto } from './dtos/getFileDto';
 import { RequestFileDto } from './dtos/requestFilesDto';
 
 
 @Controller('file')
-@UseGuards(JwtAuthGuard)
+@UseGuards(CookieAuthGuard)
 export class FileController {
   constructor(
     private readonly fileService: FileService,
@@ -63,7 +63,6 @@ export class FileController {
 
   @Post('')
   async findByUserId(@Body() request : RequestFileDto): Promise<GetFileDto[]> {
-    //todo Check token
     return this.fileService.findByUserEmail(request.email);
   }
 
@@ -75,14 +74,10 @@ export class FileController {
   @Post('download')
   async downloadById(
     @Body() request: DownloadFileRequestDto,
-    // @Headers('authorization') authorization?: string,
   ): Promise<StreamableFile> {
-    // const headerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-    // const jwtToken = headerToken ?? request.token;
     const dataFile = await this.fileService.downloadFileById(
       request.id,
       request?.password,
-      // jwtToken,
     );
 
     return new StreamableFile(dataFile);
@@ -91,20 +86,9 @@ export class FileController {
   @Get('link/:link')
   async downloadByLink(
     @Param('link') link: string,
-    // @Headers('authorization') authorization?: string,
   ): Promise<GetFileDto> {
-    // const headerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-    // const jwtToken = headerToken ?? request.token;
     const id = this.authService.revertLink(link);
     return this.fileService.findById(id);
-
-    // const dataFile = await this.fileService.downloadFileById(
-    //   fileId,
-    //   request?.password,
-    //   // jwtToken,
-    // );
-
-    // return new StreamableFile(dataFile);
   }
 
   @Delete('delete/:id')

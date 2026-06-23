@@ -5,7 +5,7 @@ import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from './auth.service'; 
 import { AuthController } from './auth.controller';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CookieAuthGuard } from './guards/cookie-auth.guard';
 import { AUTH_COOKIE_MAX_AGE_MS } from './auth-cookie';
 
 @Module({
@@ -17,8 +17,8 @@ import { AUTH_COOKIE_MAX_AGE_MS } from './auth-cookie';
       signOptions: { expiresIn: AUTH_COOKIE_MAX_AGE_MS / 1000 },
     }),
   ],
-  providers: [AuthService, JwtAuthGuard],
+  providers: [AuthService, CookieAuthGuard],
   controllers: [AuthController],
-  exports: [AuthService, JwtAuthGuard],
+  exports: [AuthService, CookieAuthGuard],
 })
 export class AuthModule {}

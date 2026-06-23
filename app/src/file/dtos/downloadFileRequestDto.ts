@@ -7,8 +7,4 @@ export class DownloadFileRequestDto {
   @IsOptional()
   @IsString()
   public password?: string;
-
-  @IsOptional()
-  @IsString()
-  public token?: string;
 }

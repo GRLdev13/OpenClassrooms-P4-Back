@@ -14,26 +14,32 @@ export class AuthController {
   async login(
     @Body() request: LoginDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<Omit<ConnectedDto, 'token'>> {
-    const connectedUser = await this.authService.signIn(
+  ): Promise<ConnectedDto> {
+    const session = await this.authService.signIn(
       request.email,
       request.password,
     );
-    const { token, ...user } = connectedUser;
 
-    setAuthCookie(response, token);
+    setAuthCookie(response, session.sessionCookie);
 
-    return user;
+    return session.user;
   }
 
   @Post('register')
-  async create(@Body() request: CreateUserDto): Promise<ConnectedDto> {
-    return this.authService.create(
+  async create(
+    @Body() request: CreateUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<ConnectedDto> {
+    const session = await this.authService.create(
       request.email,
       request.password,
       request.passwordConfirmation,
       request.firstName,
       request.lastName,
     );
+
+    setAuthCookie(response, session.sessionCookie);
+
+    return session.user;
   }
 }
