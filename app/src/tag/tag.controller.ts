@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
-import { AddTagDto } from './dtos/addTagDto';
-import { DeleteTagDto } from './dtos/deleteTagDto';
-import { GetTagDto } from './dtos/getTagDto';
+import { AddTagDto } from './dtos/addTag.dto';
+import { DeleteTagDto } from './dtos/deleteTag.dto';
+import { GetTagDto } from './dtos/getTag.dto';
 import { TagService } from './tag.service';
 
 @Controller('tag')

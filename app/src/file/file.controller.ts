@@ -14,14 +14,14 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateFileDto } from './dtos/createFile.dto';
-import { DownloadFileRequestDto } from './dtos/downloadFileRequestDto';
+import { DownloadFileRequestDto } from './dtos/downloadFileRequest.dto';
 import { FileService } from './file.service';
 import { type Express } from 'express';
 import { FileValidator } from './validators/file.validator';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { AuthService } from '../auth/auth.service';
-import { GetFileDto } from './dtos/getFileDto';
-import { RequestFileDto } from './dtos/requestFilesDto';
+import { GetFileDto } from './dtos/getFile.dto';
+import { RequestFileDto } from './dtos/requestFiles.dto';
 
 
 @Controller('file')
