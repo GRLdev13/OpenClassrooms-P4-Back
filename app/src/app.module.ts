@@ -10,7 +10,6 @@ import { Tag } from '../entities/tag';
 import { Type } from '../entities/type';
 import { FileUser } from '../entities/file-user';
 import { FileTag } from '../entities/file-tag';
-import { MigrationRunner } from './database/migration.runner';
 import { AuthModule } from './auth/auth.module';
 import { TagModule } from './tag/tag.module';
 
@@ -34,6 +33,6 @@ import { TagModule } from './tag/tag.module';
     TagModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MigrationRunner],
+  providers: [AppService],
 })
 export class AppModule {}
