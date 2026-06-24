@@ -13,9 +13,9 @@ import { FileTag } from '../../entities/file-tag';
 import { FileUser } from '../../entities/file-user';
 import { Tag } from '../../entities/tag';
 import { AuthService } from '../auth/auth.service';
-import { CreateFileDto } from './dtos/createFile.dto';
-import { CreateFileTagDto } from './dtos/createFileTag.dto';
-import { GetFileDto } from './dtos/getFile.dto';
+import { CreateFileDto } from './dtos/create-file.dto';
+import { CreateFileTagDto } from './dtos/create-file-tag.dto';
+import { GetFileDto } from './dtos/get-file.dto';
 import { FileMapper } from './file.mapper';
 import { UserService } from '../user/user.service';
 

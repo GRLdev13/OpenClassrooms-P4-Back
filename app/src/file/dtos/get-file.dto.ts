@@ -1,4 +1,4 @@
-import { GetTagDto } from "../../tag/dtos/getTag.dto";
+import { GetTagDto } from "../../tag/dtos/get-tag.dto";
 
 export class GetFileDto {
   constructor(

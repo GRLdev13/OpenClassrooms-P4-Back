@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { File } from '../../entities/file';
-import { GetFileDto } from './dtos/getFile.dto';
-import { GetTagDto } from '../tag/dtos/getTag.dto';
+import { GetFileDto } from './dtos/get-file.dto';
+import { GetTagDto } from '../tag/dtos/get-tag.dto';
 
 @Injectable()
 export class FileMapper {

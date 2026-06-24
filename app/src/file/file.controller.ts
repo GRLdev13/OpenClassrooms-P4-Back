@@ -13,15 +13,15 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateFileDto } from './dtos/createFile.dto';
-import { DownloadFileRequestDto } from './dtos/downloadFileRequest.dto';
+import { CreateFileDto } from './dtos/create-file.dto';
+import { DownloadFileRequestDto } from './dtos/download-file-request.dto';
 import { FileService } from './file.service';
 import { type Express } from 'express';
 import { FileValidator } from './validators/file.validator';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { AuthService } from '../auth/auth.service';
-import { GetFileDto } from './dtos/getFile.dto';
-import { RequestFileDto } from './dtos/requestFiles.dto';
+import { GetFileDto } from './dtos/get-file.dto';
+import { RequestFileDto } from './dtos/request-files.dto';
 
 
 @Controller('file')

@@ -1,4 +1,4 @@
-import { GetFileDto } from '../../file/dtos/getFile.dto';
+import { GetFileDto } from '../../file/dtos/get-file.dto';
 
 export class ConnectedDto {
   constructor(

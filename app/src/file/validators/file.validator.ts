@@ -4,7 +4,7 @@ import {
   Injectable,
   ValidationPipe,
 } from '@nestjs/common';
-import { CreateFileDto } from '../dtos/createFile.dto';
+import { CreateFileDto } from '../dtos/create-file.dto';
 
 @Injectable()
 export class FileValidator extends ValidationPipe {

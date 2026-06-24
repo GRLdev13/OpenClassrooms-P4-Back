@@ -5,7 +5,7 @@ import {
   IsString,
   ValidateIf,
 } from 'class-validator';
-import { CreateFileTagDto } from './createFileTag.dto';
+import { CreateFileTagDto } from './create-file-tag.dto';
 
 export class CreateFileDto {
   // @IsString()

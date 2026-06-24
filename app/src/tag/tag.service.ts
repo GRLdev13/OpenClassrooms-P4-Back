@@ -7,8 +7,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Tag } from '../../entities/tag';
-import { AddTagDto } from './dtos/addTag.dto';
-import { GetTagDto } from './dtos/getTag.dto';
+import { AddTagDto } from './dtos/add-tag.dto';
+import { GetTagDto } from './dtos/get-tag.dto';
 
 @Injectable()
 export class TagService {
