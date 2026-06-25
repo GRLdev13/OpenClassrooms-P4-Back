@@ -21,7 +21,7 @@ import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { GetFileDto } from './dtos/get-file.dto';
 import { RequestFileDto } from './dtos/request-files.dto';
-import { FileIntercept } from './file.Interceptor';
+import { FileIntercepting } from './file.Interceptor';
 
 @Controller('file')
 export class FileController {
@@ -32,7 +32,7 @@ export class FileController {
 
   @Post('upload')
   @UseGuards(CookieAuthGuard)
-  @UseInterceptors(FileIntercept)
+  @UseInterceptors(FileIntercepting)
   async uploadFile(
     @Body(FileValidator) body: CreateFileDto,
     @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
