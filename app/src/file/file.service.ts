@@ -33,7 +33,10 @@ export class FileService {
     private readonly authService: AuthService,
   ) {}
 
-  async create(createFileDto: CreateFileDto, fileBuffer : Buffer): Promise<boolean> {
+  async create(
+    createFileDto: CreateFileDto,
+    fileBuffer: Buffer,
+  ): Promise<boolean> {
     if (createFileDto == null || !fileBuffer || !Buffer.isBuffer(fileBuffer)) {
       throw new BadRequestException(`File payload is required`);
     }
@@ -68,17 +71,18 @@ export class FileService {
       expirationDate.setMilliseconds(0);
 
       file.expirationDate = expirationDate;
+      file.physicalName = Buffer.from(`${file.uploadDate}_${file.id}`, 'utf-8').toString(
+        'base64url',
+      );
       await this.fileRepository.manager.transaction(async (manager) => {
         const createdFile = await manager.save(Files, file);
         createdFile.link = this.authService.generateLink(createdFile.id);
         createdFile.user = user;
-        await FileHelper.CreateFileAtPath(
-          fileBuffer,
-          createFileDto.name,
-        );
+
+        await FileHelper.CreateFileAtPath(fileBuffer, file.physicalName);
+
         await manager.save(Files, createdFile);
         await this.tagsCustomMage(manager, createdFile, createFileDto.tags);
-        await FileHelper.EnsurePath();
       });
     } catch (error) {
       throw new BadRequestException(`File failed samer: ` + error);
@@ -177,7 +181,7 @@ export class FileService {
       }
     }
 
-    FileHelper.DeleteFileAtPath(file.name);
+    FileHelper.DeleteFileAtPath(file.physicalName);
 
     return { deleted: true };
   }
