@@ -5,7 +5,8 @@ import {
   Column,
   OneToMany,
 } from 'typeorm';
-import { FileUser } from './file-user';
+
+import { File } from './file';
 
 @Entity('Users')
 export class User extends BaseEntity {
@@ -24,15 +25,10 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   lastname!: string;
 
-  @Column({ type: 'bytea', nullable: true })
-  picture!: Buffer | null;
-
   @Column({ type: 'boolean', default: false })
   hasVerifiedEmail!: boolean;
-
-  // Relationships
-  @OneToMany(() => FileUser, (fileUser) => fileUser.user, { cascade: true })
-  fileUsers!: FileUser[];
+    @OneToMany(() => File, (file) => file.user, { cascade: true })
+  file!: File[];
 
   static findByName(email: string) {
     return this.createQueryBuilder('user')

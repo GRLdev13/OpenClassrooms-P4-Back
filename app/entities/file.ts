@@ -4,14 +4,18 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToMany,
+  ManyToOne,
 } from 'typeorm';
-import { FileUser } from './file-user';
 import { FileTag } from './file-tag';
+import { User } from './user';
 
 @Entity('File')
 export class File extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({type:'uuid', nullable:true}) //can be null for anonymous uploader
+  id_user!:string
 
   @Column({ type: 'timestamp', nullable: true })
   expirationDate!: Date | null;
@@ -30,10 +34,9 @@ export class File extends BaseEntity {
 
   @Column({ type: 'bytea', nullable: true })
   rawData!: Buffer | null;
-
-  // Relationships
-  @OneToMany(() => FileUser, (fileUser) => fileUser.file, { cascade: true })
-  fileUsers!: FileUser[];
+    // Relationships
+ @ManyToOne(() => User, (user) => user.file)
+  user!: User
 
   @OneToMany(() => FileTag, (fileTag) => fileTag.file, { cascade: true })
   fileTags!: FileTag[];
