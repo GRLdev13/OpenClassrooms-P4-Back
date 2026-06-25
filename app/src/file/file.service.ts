@@ -33,9 +33,8 @@ export class FileService {
     private readonly authService: AuthService,
   ) {}
 
-  async create(createFileDto: CreateFileDto): Promise<boolean> {
-    if (createFileDto == null || !createFileDto.rawFile) {
-      //todo better error
+  async create(createFileDto: CreateFileDto, fileBuffer : Buffer): Promise<boolean> {
+    if (createFileDto == null || !fileBuffer || !Buffer.isBuffer(fileBuffer)) {
       throw new BadRequestException(`File payload is required`);
     }
 
@@ -74,7 +73,7 @@ export class FileService {
         createdFile.link = this.authService.generateLink(createdFile.id);
         createdFile.user = user;
         await FileHelper.CreateFileAtPath(
-          this.fileMapper.toBlob(createFileDto.rawFile),
+          fileBuffer,
           createFileDto.name,
         );
         await manager.save(Files, createdFile);

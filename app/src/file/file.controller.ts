@@ -31,20 +31,25 @@ export class FileController {
   ) {}
 
   @Post('upload')
-    @UseGuards(CookieAuthGuard)
+  @UseGuards(CookieAuthGuard)
   @UseInterceptors(FileIntercepting)
   async uploadFile(
     @Body(FileValidator) body: CreateFileDto,
     @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
     file: Express.Multer.File,
   ): Promise<GetFileDto[]> {
-    console.log('File body parameters: ', body);
+
+    performance.mark('upload-start');
+
+    //TODO: change in file stream
     const createFileDto = {
       ...body,
-      rawFile: file.buffer.toString('base64'),
     };
 
-    let isFileCreated = await this.fileService.create(createFileDto);
+    let isFileCreated = await this.fileService.create(createFileDto, file.buffer);
+    
+    performance.mark('upload-end');
+    performance.measure('download endpoint', 'upload-start', 'upload-end');
 
     if (isFileCreated) {
       return this.fileService.findAll();
@@ -53,9 +58,9 @@ export class FileController {
     }
   }
 
-    @Post('')
+  @Post('')
   @UseGuards(CookieAuthGuard)
-  async findByUserId(@Body() request : RequestFileDto): Promise<GetFileDto[]> {
+  async findByUserId(@Body() request: RequestFileDto): Promise<GetFileDto[]> {
     return this.fileService.findByUserEmail(request.email);
   }
 
@@ -72,13 +77,10 @@ export class FileController {
     return new StreamableFile(dataFile);
   }
 
-
   //TODO: If anonymous user do not check for auth guard or something
   @Get('link/:link')
   @UseGuards(CookieAuthGuard)
-  async downloadByLink(
-    @Param('link') link: string,
-  ): Promise<GetFileDto> {
+  async downloadByLink(@Param('link') link: string): Promise<GetFileDto> {
     const id = this.authService.revertLink(link);
     return this.fileService.findById(id);
   }
@@ -88,5 +90,4 @@ export class FileController {
   async deleteById(@Param('id') id: string): Promise<{ deleted: boolean }> {
     return this.fileService.deleteById(id);
   }
-
 }
