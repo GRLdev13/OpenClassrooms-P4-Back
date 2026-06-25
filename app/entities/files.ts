@@ -14,9 +14,6 @@ export class Files extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({type:'uuid', nullable:true}) //can be null for anonymous uploader
-  id_user!:string
-
   @Column({ type: 'timestamp', nullable: true })
   expirationDate!: Date | null;
 

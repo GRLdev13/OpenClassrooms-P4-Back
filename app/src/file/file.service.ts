@@ -68,8 +68,8 @@ export class FileService {
       await this.fileRepository.manager.transaction(async (manager) => {
         const createdFile = await manager.save(Files, file);
         createdFile.link = this.authService.generateLink(createdFile.id);
-        await manager.save(Files, createdFile);
         createdFile.user = user;
+        await manager.save(Files, createdFile);
         await this.tagsCustomMage(manager, createdFile, createFileDto.tags);
       });
     } catch (error) {
