@@ -54,18 +54,18 @@ export class FileValidator extends ValidationPipe {
 
   async transform(value: CreateFileDto, metadata: ArgumentMetadata) {
     const transformedValue = await super.transform(value, metadata);
-    const forbiddenExtension = this.getForbiddenExtension(
+    const hasForbiddenExtension = FileValidator.getForbiddenExtension(
       transformedValue.extension,
     );
 
-    if (forbiddenExtension) {
+    if (hasForbiddenExtension) {
       throw new BadRequestException({
         message: 'Invalid file payload',
         errors: [
           {
             property: 'extension',
             constraints: {
-              forbiddenExtension: `${forbiddenExtension} files are not allowed`,
+              forbiddenExtension: `${transformedValue.extension} files are not allowed`,
             },
           },
         ],
@@ -75,9 +75,9 @@ export class FileValidator extends ValidationPipe {
     return transformedValue;
   }
 
-  private getForbiddenExtension(extension?: string): string | null {
+  static getForbiddenExtension(extension?: string): boolean {
     if (!extension) {
-      return null;
+      return false;
     }
 
     const normalizedExtension = extension.trim().toLowerCase();
@@ -85,8 +85,6 @@ export class FileValidator extends ValidationPipe {
       ? normalizedExtension
       : `.${normalizedExtension}`;
 
-    return FileValidator.forbiddenExtensions.includes(extensionWithDot)
-      ? extensionWithDot
-      : null;
+    return FileValidator.forbiddenExtensions.includes(extensionWithDot);
   }
 }

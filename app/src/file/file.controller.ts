@@ -12,7 +12,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateFileDto } from './dtos/create-file.dto';
 import { DownloadFileRequestDto } from './dtos/download-file-request.dto';
 import { FileService } from './file.service';
@@ -22,7 +21,7 @@ import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { GetFileDto } from './dtos/get-file.dto';
 import { RequestFileDto } from './dtos/request-files.dto';
-
+import { FileIntercept } from './file.Interceptor';
 
 @Controller('file')
 export class FileController {
@@ -33,7 +32,7 @@ export class FileController {
 
   @Post('upload')
   @UseGuards(CookieAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileIntercept)
   async uploadFile(
     @Body(FileValidator) body: CreateFileDto,
     @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
@@ -55,6 +54,7 @@ export class FileController {
   }
 
     @Post('')
+  @UseGuards(CookieAuthGuard)
   async findByUserId(@Body() request : RequestFileDto): Promise<GetFileDto[]> {
     return this.fileService.findByUserEmail(request.email);
   }
@@ -72,6 +72,8 @@ export class FileController {
     return new StreamableFile(dataFile);
   }
 
+
+  //TODO: If anonymous user do not check for auth guard or something
   @Get('link/:link')
   @UseGuards(CookieAuthGuard)
   async downloadByLink(
