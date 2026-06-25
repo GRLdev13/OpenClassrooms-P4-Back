@@ -1,0 +1,218 @@
+File Upload Functionality Test Plan
+
+Scope
+Test only the file upload behavior exposed by POST /file/upload.
+The route receives multipart/form-data with a file field named file and body fields mapped to CreateFileDto.
+
+Route Under Test
+POST /file/upload
+
+Authentication
+- The route is protected by CookieAuthGuard.
+- A valid session_id cookie is required.
+
+Multipart Fields
+- file: uploaded binary file, required
+- name
+- extension
+- password, optional
+- uploadDate, optional
+- tags, optional
+- expirationTimeInDay
+- email
+
+Expected Successful Behavior
+- The route accepts multipart/form-data when the request is authenticated.
+- The uploaded file buffer is converted to base64 and assigned to rawFile.
+- The route calls FileService.create with the body fields plus rawFile.
+- If FileService.create returns true, the route calls FileService.findAll.
+- The response body contains the list returned by FileService.findAll.
+- The service stores the file, links it to the user found by email, creates a generated link, and applies tags.
+- If a password is provided, the service stores a hashed password rather than the raw password.
+- If uploadDate is not provided, the service uses the current date.
+- expirationDate is calculated by adding expirationTimeInDay to uploadDate.
+
+Test Environment
+- Use a test Nest application with FileController.
+- Mock CookieAuthGuard as allowed for route-level success and validation tests.
+- Mock FileService for route-level tests.
+- Mock FileRepository, UserService, FileMapper, AuthService, and transaction manager for service-level tests.
+- Do not use the real database for this simple plan unless an integration test is explicitly added later.
+
+Test Cases
+
+1. Successful multipart upload through route
+Preconditions:
+- CookieAuthGuard allows the request.
+- FileService.create returns true.
+- FileService.findAll returns a list of file DTOs.
+Input:
+- file: notes.txt with content "file contents"
+- name: notes.txt
+- extension: .txt
+- email: user@example.com
+- expirationTimeInDay: 7
+Steps:
+- Send POST /file/upload as multipart/form-data.
+Expected result:
+- HTTP status is 201.
+- FileService.create is called once.
+- The create payload contains name, extension, email, expirationTimeInDay, and rawFile.
+- rawFile equals the base64 value of the uploaded file buffer.
+- FileService.findAll is called once.
+- Response body equals the list returned by FileService.findAll.
+
+2. Missing uploaded file
+Preconditions:
+- CookieAuthGuard allows the request.
+Input:
+- Multipart body fields are present, but no file field is attached.
+Steps:
+- Send POST /file/upload without the file attachment.
+Expected result:
+- Request is rejected by ParseFilePipe.
+- FileService.create is not called.
+- FileService.findAll is not called.
+
+3. Unauthenticated upload
+Preconditions:
+- CookieAuthGuard rejects the request because session_id is missing or invalid.
+Input:
+- Valid multipart upload payload.
+Steps:
+- Send POST /file/upload without a valid session_id cookie.
+Expected result:
+- HTTP status is 401.
+- Error message indicates authentication cookie is required or invalid.
+- FileService.create is not called.
+
+4. Forbidden file extension
+Preconditions:
+- CookieAuthGuard allows the request.
+Input:
+- extension: .exe
+- valid uploaded file and other body fields
+Steps:
+- Send POST /file/upload with a forbidden extension.
+Expected result:
+- HTTP status is 400.
+- Error message is "Invalid file payload".
+- Validation error identifies extension as forbidden.
+- FileService.create is not called.
+
+5. Upload service rejects missing rawFile
+Preconditions:
+- Service-level test calls FileService.create directly.
+Input:
+- CreateFileDto is null or has empty rawFile.
+Steps:
+- Call FileService.create.
+Expected result:
+- A BadRequestException is thrown.
+- Error message is "File payload is required".
+- No transaction is started.
+- No file is saved.
+
+6. Upload service rejects missing email
+Preconditions:
+- Service-level test calls FileService.create directly.
+Input:
+- rawFile is present.
+- email is empty or missing.
+Steps:
+- Call FileService.create.
+Expected result:
+- A BadRequestException is thrown.
+- Error message is "File user reference is required".
+- UserService.findByEmail is not called.
+- No file is saved.
+
+7. Upload service links file to user
+Preconditions:
+- UserService.findByEmail returns a user with an id.
+- Transaction manager save calls succeed.
+- AuthService.generateLink returns a generated file link.
+Input:
+- Valid CreateFileDto with email and rawFile.
+Steps:
+- Call FileService.create.
+Expected result:
+- UserService.findByEmail is called with the submitted email.
+- The file is saved inside a transaction.
+- AuthService.generateLink is called with the created file id.
+- A FileUser relation is saved with the created file id and user id.
+- The method returns true.
+
+8. Upload service hashes optional file password
+Preconditions:
+- UserService.findByEmail returns a user.
+- AuthService.hashPassword returns a hashed password.
+Input:
+- Valid CreateFileDto with password: secret123.
+Steps:
+- Call FileService.create.
+Expected result:
+- AuthService.hashPassword is called with secret123.
+- The saved File password is the hashed value.
+- The saved File password is not secret123.
+
+9. Upload service supports tags
+Preconditions:
+- UserService.findByEmail returns a user.
+- Transaction manager can save FileTag relations.
+Input:
+- Valid CreateFileDto with tags as a JSON string or array.
+Steps:
+- Call FileService.create.
+Expected result:
+- Tags are normalized.
+- Duplicate tags are ignored.
+- Existing tags are reused when found.
+- New tags are created when no matching tag exists.
+- FileTag relations are saved for each unique tag.
+
+10. Upload service calculates expiration date
+Preconditions:
+- UserService.findByEmail returns a user.
+Input:
+- uploadDate: 2026-06-24T10:00:00.000Z
+- expirationTimeInDay: 7
+Steps:
+- Call FileService.create.
+Expected result:
+- uploadDate is stored from the provided date.
+- expirationDate is 7 days after uploadDate.
+- expirationDate milliseconds are set to 0.
+
+11. Invalid uploadDate
+Preconditions:
+- UserService.findByEmail returns a user.
+Input:
+- uploadDate: not-a-date
+Steps:
+- Call FileService.create.
+Expected result:
+- A BadRequestException is thrown.
+- Error message is "Invalid date format".
+- No complete file creation is returned.
+
+12. FileService.create returns false-like result
+Preconditions:
+- CookieAuthGuard allows the request.
+- FileService.create returns false.
+Input:
+- Valid multipart upload payload.
+Steps:
+- Send POST /file/upload.
+Expected result:
+- HTTP status is 201.
+- FileService.findAll is not required for the response.
+- Response body is an empty array.
+
+Out of Scope
+- File download behavior.
+- File download by generated link.
+- File deletion.
+- Listing files by user email through POST /file.
+- Sharing files with other users.
+- Real database migrations.

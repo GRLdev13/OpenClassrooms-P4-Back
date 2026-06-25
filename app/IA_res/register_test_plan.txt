@@ -1,0 +1,131 @@
+Register Functionality Test Plan
+
+Scope
+Test only the user registration behavior exposed by POST /auth/register.
+The route receives the register DTO currently implemented as CreateUserDto and calls AuthService.create.
+
+Route Under Test
+POST /auth/register
+
+Register DTO Fields
+- email
+- password
+- passwordConfirmation
+- firstName
+- lastName
+
+Expected Successful Behavior
+- The route passes email, password, passwordConfirmation, firstName, and lastName to AuthService.create in that order.
+- The service rejects invalid registration input before creating a user.
+- When registration succeeds, a new user is created with a hashed password.
+- The response body contains the connected user data.
+- The response sets the authentication cookie named session_id.
+- The cookie is httpOnly, sameSite strict, path "/", and has a max age of 1 hour.
+
+Test Environment
+- Use a test Nest application with AuthController.
+- Mock AuthService for route-level tests.
+- Mock UserService, JwtService, and UserMapper for service-level tests.
+- Do not use the real database for this simple plan unless an integration test is explicitly added later.
+
+Test Cases
+
+1. Successful registration through route
+Preconditions:
+- AuthService.create returns a session containing a connected user and a session token.
+Input:
+- email: user@example.com
+- password: password123
+- passwordConfirmation: password123
+- firstName: Jane
+- lastName: Doe
+Steps:
+- Send POST /auth/register with the input body.
+Expected result:
+- HTTP status is 201.
+- AuthService.create is called with user@example.com, password123, password123, Jane, Doe.
+- Response body equals the connected user DTO.
+- Set-Cookie header contains session_id with the returned session token.
+
+2. Password confirmation mismatch
+Preconditions:
+- UserService.findByEmailOrNull is not required to return a user.
+Input:
+- password: password123
+- passwordConfirmation: different123
+Steps:
+- Call AuthService.create with mismatched password values.
+Expected result:
+- A BadRequestException is thrown.
+- Error message is "Password and password confirmation do not match".
+- UserService.createUser is not called.
+- JwtService.signAsync is not called.
+
+3. Duplicate email
+Preconditions:
+- UserService.findByEmailOrNull returns an existing user for the submitted email.
+Input:
+- email: user@example.com
+- password: password123
+- passwordConfirmation: password123
+Steps:
+- Call AuthService.create with an email that already exists.
+Expected result:
+- A ConflictException is thrown.
+- Error message is "Email already used".
+- UserService.createUser is not called.
+- JwtService.signAsync is not called.
+
+4. Password too short
+Preconditions:
+- UserService.findByEmailOrNull returns null.
+Input:
+- password: short
+- passwordConfirmation: short
+Steps:
+- Call AuthService.create with a password shorter than 8 characters.
+Expected result:
+- A BadRequestException is thrown.
+- Error message is "Password must contain at least 8 characters".
+- UserService.createUser is not called.
+- JwtService.signAsync is not called.
+
+5. User creation uses a hashed password
+Preconditions:
+- UserService.findByEmailOrNull returns null.
+- UserService.createUser returns the created user.
+Input:
+- email: user@example.com
+- password: password123
+- passwordConfirmation: password123
+- firstName: Jane
+- lastName: Doe
+Steps:
+- Call AuthService.create.
+Expected result:
+- UserService.createUser is called once.
+- The password argument sent to UserService.createUser is not password123.
+- The password argument contains a salt and hash separated by ":".
+- The firstName and lastName values are forwarded unchanged.
+
+6. Successful service registration returns a session
+Preconditions:
+- UserService.findByEmailOrNull returns null.
+- UserService.createUser returns a new user.
+- JwtService.signAsync returns a token.
+- UserMapper.fromUserToConnected returns a connected user DTO.
+Input:
+- Valid register DTO values.
+Steps:
+- Call AuthService.create.
+Expected result:
+- JwtService.signAsync is called with an object containing sub equal to the user's email.
+- Returned session contains the mapped connected user.
+- Returned session contains the generated session token.
+
+Out of Scope
+- Login route behavior.
+- Authentication guard behavior.
+- Email verification.
+- Real database migrations.
+- File upload or file sharing behavior.

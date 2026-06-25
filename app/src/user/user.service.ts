@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../../entities/user';
+import { User } from '../../entities/users';
 
 @Injectable()
 export class UserService {
@@ -44,11 +44,9 @@ export class UserService {
     return this.userRepository.findOne({
       where: { email },
       relations: {
-        fileUsers: {
-          file: {
-            fileTags: {
-              tag: true,
-            },
+        files: {
+          fileTags: {
+            tag: true,
           },
         },
       },
@@ -83,9 +81,7 @@ export class UserService {
       password,
       firstname,
       lastname,
-      picture: null,
       hasVerifiedEmail: false,
-      fileUsers: [],
     });
 
     return this.userRepository.save(user);

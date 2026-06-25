@@ -6,7 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { File } from './file';
+import { Files } from './files';
 import { Tag } from './tag';
 
 @Entity('File_Tags')
@@ -25,7 +25,7 @@ export class FileTag extends BaseEntity {
   @JoinColumn({ name: 'idTag' })
   tag!: Tag;
 
-  @ManyToOne(() => File, (file) => file.fileTags, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Files, (file) => file.fileTags, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'idFile' })
-  file!: File;
+  file!: Files;
 }

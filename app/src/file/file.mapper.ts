@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { File } from '../../entities/file';
+import { Files } from '../../entities/files';
 import { GetFileDto } from './dtos/get-file.dto';
 import { GetTagDto } from '../tag/dtos/get-tag.dto';
 
 @Injectable()
 export class FileMapper {
-  toDto(file: File): GetFileDto {
+  toDto(file: Files): GetFileDto {
     return new GetFileDto(
       file.id,
       file.name ?? 'unnamed file',
@@ -22,7 +22,7 @@ export class FileMapper {
     );
   }
 
-  toDtoArray(files: File[]): GetFileDto[] {
+  toDtoArray(files: Files[]): GetFileDto[] {
     return files.map((file) => this.toDto(file));
   }
 

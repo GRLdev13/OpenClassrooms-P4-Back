@@ -6,7 +6,7 @@ import {
   OneToMany,
 } from 'typeorm';
 
-import { File } from './file';
+import { Files } from './files';
 
 @Entity('Users')
 export class User extends BaseEntity {
@@ -27,8 +27,8 @@ export class User extends BaseEntity {
 
   @Column({ type: 'boolean', default: false })
   hasVerifiedEmail!: boolean;
-    @OneToMany(() => File, (file) => file.user, { cascade: true })
-  file!: File[];
+  @OneToMany(() => Files, (file) => file.user, { cascade: true })
+  files!: Files[];
 
   static findByName(email: string) {
     return this.createQueryBuilder('user')

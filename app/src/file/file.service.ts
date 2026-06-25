@@ -8,9 +8,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
-import { File } from '../../entities/file';
+import { Files } from '../../entities/files';
 import { FileTag } from '../../entities/file-tag';
-import { FileUser } from '../../entities/file-user';
 import { Tag } from '../../entities/tag';
 import { AuthService } from '../auth/auth.service';
 import { CreateFileDto } from './dtos/create-file.dto';
@@ -22,8 +21,8 @@ import { UserService } from '../user/user.service';
 @Injectable()
 export class FileService {
   constructor(
-    @InjectRepository(File)
-    private readonly fileRepository: Repository<File>,
+    @InjectRepository(Files)
+    private readonly fileRepository: Repository<Files>,
     private readonly userService: UserService,
     private readonly fileMapper: FileMapper,
     @Inject(forwardRef(() => AuthService))
@@ -40,14 +39,14 @@ export class FileService {
       throw new BadRequestException(`File user reference is required`);
     }
 
-    let userId = (await this.userService.findByEmail(createFileDto.email)).id;
+    let user = (await this.userService.findByEmail(createFileDto.email));
 
-    if (!userId) {
+    if (!user) {
       throw new BadRequestException(`User not found somehow`);
     }
 
     try {
-      const file = new File();
+      const file = new Files();
       file.name = createFileDto.name;
       file.rawData = this.fileMapper.toBlob(createFileDto.rawFile);
       file.password = createFileDto.password
@@ -67,10 +66,10 @@ export class FileService {
 
       file.expirationDate = expirationDate;
       await this.fileRepository.manager.transaction(async (manager) => {
-        const createdFile = await manager.save(File, file);
+        const createdFile = await manager.save(Files, file);
         createdFile.link = this.authService.generateLink(createdFile.id);
-        await manager.save(File, createdFile);
-        await this.linkFileToUser(manager, createdFile, userId);
+        await manager.save(Files, createdFile);
+        createdFile.user = user;
         await this.tagsCustomMage(manager, createdFile, createFileDto.tags);
       });
     } catch (error) {
@@ -78,19 +77,6 @@ export class FileService {
       return false;
     }
     return true;
-  }
-
-  private async linkFileToUser(
-    manager: EntityManager,
-    file: File,
-    idUser: string,
-  ): Promise<void> {
-    const fileUser = new FileUser();
-    fileUser.idFile = file.id;
-    fileUser.idUser = idUser;
-    fileUser.file = file;
-
-    await manager.save(FileUser, fileUser);
   }
 
   async findById(id: string): Promise<GetFileDto> {
@@ -155,7 +141,7 @@ export class FileService {
   async findByUserEmail(userEmail: string): Promise<GetFileDto[]> {
     const user = await this.userService.findByEmail(userEmail);
 
-    return this.fileMapper.toDtoArray(user.fileUsers.map((x) => x.file));
+    return this.fileMapper.toDtoArray(user.files.map((x) => x));
   }
 
   async deleteById(id: string): Promise<{ deleted: boolean }> {
@@ -181,7 +167,7 @@ export class FileService {
 
   private async tagsCustomMage(
     manager: EntityManager,
-    file: File,
+    file: Files,
     rawTags?: CreateFileTagDto[] | string,
   ): Promise<void> {
     const tagInputs = this.normalizeTags(rawTags);

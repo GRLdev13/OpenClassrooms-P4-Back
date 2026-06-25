@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { File } from '../../entities/file';
+import { Files } from '../../entities/files';
 import { FileTag } from '../../entities/file-tag';
 import { FileUser } from '../../entities/file-user';
 import { AuthService } from '../auth/auth.service';
@@ -65,7 +65,7 @@ describe('FileService upload creation', () => {
 
     manager = {
       save: jest.fn(async (_target, entity) => {
-        if (entity instanceof File && !entity.id) {
+        if (entity instanceof Files && !entity.id) {
           entity.id = 'file-id';
         }
 
@@ -132,8 +132,8 @@ describe('FileService upload creation', () => {
     await service.create(validDto({ password: 'secret123' }));
 
     const savedFile = manager.save.mock.calls.find(
-      ([target]) => target === File,
-    )?.[1] as File;
+      ([target]) => target === Files,
+    )?.[1] as Files;
 
     expect(authService.hashPassword).toHaveBeenCalledWith('secret123');
     expect(savedFile.password).toBe('hashed-password');
@@ -168,8 +168,8 @@ describe('FileService upload creation', () => {
     );
 
     const savedFile = manager.save.mock.calls.find(
-      ([target]) => target === File,
-    )?.[1] as File;
+      ([target]) => target === Files,
+    )?.[1] as Files;
 
     expect(savedFile.uploadDate?.toISOString()).toBe(
       '2026-06-24T10:00:00.123Z',

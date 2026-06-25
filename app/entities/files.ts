@@ -7,10 +7,10 @@ import {
   ManyToOne,
 } from 'typeorm';
 import { FileTag } from './file-tag';
-import { User } from './user';
+import { User } from './users';
 
-@Entity('File')
-export class File extends BaseEntity {
+@Entity('Files')
+export class Files extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -35,7 +35,7 @@ export class File extends BaseEntity {
   @Column({ type: 'bytea', nullable: true })
   rawData!: Buffer | null;
     // Relationships
- @ManyToOne(() => User, (user) => user.file)
+ @ManyToOne(() => User, (user) => user.files)
   user!: User
 
   @OneToMany(() => FileTag, (fileTag) => fileTag.file, { cascade: true })

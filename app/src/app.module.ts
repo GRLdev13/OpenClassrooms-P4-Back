@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FileModule } from './file/file.module';
 import { UserModule } from './user/user.module';
-import { User } from '../entities/user';
-import { File } from '../entities/file';
+import { User } from '../entities/users';
+import { Files } from '../entities/files';
 import { Tag } from '../entities/tag';
 import { FileTag } from '../entities/file-tag';
 import { AuthModule } from './auth/auth.module';
@@ -19,7 +19,7 @@ import { TagModule } from './tag/tag.module';
       password: process.env.DB_PASSWORD || 'admin',
       database: process.env.DB_NAME || 'postgres',
       schema: 'public',
-      entities: [User, File, Tag, FileTag],
+      entities: [User, Files, Tag, FileTag],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV !== 'production',
     }),

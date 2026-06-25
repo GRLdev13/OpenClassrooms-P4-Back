@@ -3,8 +3,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AuthService } from '../auth/auth.service';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
+import {
+  createFileTooLargeException,
+  FILE_UPLOAD_FIELD,
+  isAllowedFileSize,
+  MAX_FILE_SIZE_BYTES,
+  ONE_GIB_IN_BYTES,
+} from './file.Interceptor';
 import { FileController } from './file.controller';
 import { FileService } from './file.service';
+import { FileValidator } from './validators/file.validator';
 
 describe('FileController routes', () => {
   let app: INestApplication;
@@ -76,7 +84,7 @@ describe('FileController routes', () => {
       .field('extension', '.txt')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('file', uploadedFile, 'notes.txt')
+      .attach('FileIntercepting', uploadedFile, 'notes.txt')
       .expect(201);
 
     expect(fileService.create).toHaveBeenCalledWith(
@@ -121,24 +129,74 @@ describe('FileController routes', () => {
       .field('extension', '.txt')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('file', Buffer.from('file contents'), 'notes.txt')
+      .attach('FileIntercepting', Buffer.from('file contents'), 'notes.txt')
       .expect(401);
 
     expect(fileService.create).not.toHaveBeenCalled();
   });
 
   it('POST /file/upload rejects forbidden file extensions', async () => {
+    expect(FileValidator.getForbiddenExtension('.exe')).toBe(true);
+    expect(FileValidator.getForbiddenExtension('.txt')).toBe(false);
+
     const response = await request(app.getHttpServer())
       .post('/file/upload')
       .field('name', 'malware.exe')
       .field('extension', '.exe')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('file', Buffer.from('file contents'), 'malware.exe')
+      .attach('FileIntercepting', Buffer.from('file contents'), 'notes.txt')
       .expect(400);
 
     expect(response.body.message).toBe('Invalid file payload');
+    expect(response.body.errors).toEqual([
+      {
+        property: 'extension',
+        constraints: {
+          forbiddenExtension: '.exe files are not allowed',
+        },
+      },
+    ]);
     expect(fileService.create).not.toHaveBeenCalled();
+  });
+
+  it('POST /file/upload rejects forbidden uploaded file names', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/file/upload')
+      .field('name', 'malware')
+      .field('extension', '.txt')
+      .field('email', 'user@example.com')
+      .field('expirationTimeInDay', '7')
+      .attach('FileIntercepting', Buffer.from('file contents'), 'malware.exe')
+      .expect(400);
+
+    expect(response.body.message).toBe('Invalid file payload');
+    expect(response.body.errors).toEqual([
+      {
+        property: FILE_UPLOAD_FIELD,
+        constraints: {
+          forbiddenExtension: '.exe files are not allowed',
+        },
+      },
+    ]);
+    expect(fileService.create).not.toHaveBeenCalled();
+  });
+
+  it('POST /file/upload rejects files that are 1 GiB or larger', () => {
+    expect(MAX_FILE_SIZE_BYTES).toBe(ONE_GIB_IN_BYTES - 1);
+    expect(isAllowedFileSize(MAX_FILE_SIZE_BYTES)).toBe(true);
+    expect(isAllowedFileSize(ONE_GIB_IN_BYTES)).toBe(false);
+    expect(createFileTooLargeException().getResponse()).toEqual({
+      message: 'Invalid file payload',
+      errors: [
+        {
+          property: FILE_UPLOAD_FIELD,
+          constraints: {
+            maxFileSize: `File size must be less than ${ONE_GIB_IN_BYTES} bytes`,
+          },
+        },
+      ],
+    });
   });
 
   it('POST /file/upload returns an empty list when creation returns false', async () => {
@@ -150,7 +208,7 @@ describe('FileController routes', () => {
       .field('extension', '.txt')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('file', Buffer.from('file contents'), 'notes.txt')
+      .attach('FileIntercepting', Buffer.from('file contents'), 'notes.txt')
       .expect(201);
 
     expect(fileService.findAll).not.toHaveBeenCalled();
