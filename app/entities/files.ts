@@ -29,11 +29,15 @@ export class Files extends BaseEntity {
   @Column({ type: 'timestamp', nullable: true })
   uploadDate!: Date | null;
 
-  @Column({ type: 'bytea', nullable: true })
-  rawData!: Buffer | null;
-    // Relationships
- @ManyToOne(() => User, (user) => user.files)
-  user!: User
+  @Column({ type: 'varchar' })
+  path!: string;
+
+  // @Column({ type: 'bytea', nullable: true })
+  // rawData!: Buffer | null;
+
+  // Relationships
+  @ManyToOne(() => User, (user) => user.files)
+  user!: User;
 
   @OneToMany(() => FileTag, (fileTag) => fileTag.file, { cascade: true })
   fileTags!: FileTag[];

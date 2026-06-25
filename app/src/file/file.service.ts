@@ -7,6 +7,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { EntityManager, Repository } from 'typeorm';
 import { Files } from '../../entities/files';
 import { FileTag } from '../../entities/file-tag';
@@ -17,6 +19,8 @@ import { CreateFileTagDto } from './dtos/create-file-tag.dto';
 import { GetFileDto } from './dtos/get-file.dto';
 import { FileMapper } from './file.mapper';
 import { UserService } from '../user/user.service';
+import { FILE_RESOURCE_PATH } from '@/resources/path.resource';
+import { FileHelper } from '@/resources/file.helper';
 
 @Injectable()
 export class FileService {
@@ -39,7 +43,7 @@ export class FileService {
       throw new BadRequestException(`File user reference is required`);
     }
 
-    let user = (await this.userService.findByEmail(createFileDto.email));
+    let user = await this.userService.findByEmail(createFileDto.email);
 
     if (!user) {
       throw new BadRequestException(`User not found somehow`);
@@ -48,7 +52,8 @@ export class FileService {
     try {
       const file = new Files();
       file.name = createFileDto.name;
-      file.rawData = this.fileMapper.toBlob(createFileDto.rawFile);
+      file.path = FILE_RESOURCE_PATH;
+      // file.rawData = ;
       file.password = createFileDto.password
         ? this.authService.hashPassword(createFileDto.password)
         : null;
@@ -69,8 +74,13 @@ export class FileService {
         const createdFile = await manager.save(Files, file);
         createdFile.link = this.authService.generateLink(createdFile.id);
         createdFile.user = user;
+        await FileHelper.CreateFileAtPath(
+          this.fileMapper.toBlob(createFileDto.rawFile),
+          createFileDto.name,
+        );
         await manager.save(Files, createdFile);
         await this.tagsCustomMage(manager, createdFile, createFileDto.tags);
+        await FileHelper.EnsurePath();
       });
     } catch (error) {
       throw new BadRequestException(`File failed samer: ` + error);
@@ -101,10 +111,7 @@ export class FileService {
     return this.fileMapper.toDto(file);
   }
 
-  async downloadFileById(
-    id: string,
-    password?: string,
-  ): Promise<Buffer> {
+  async downloadFileById(id: string, password?: string): Promise<Buffer> {
     const file = await this.fileRepository.findOne({ where: { id } });
 
     if (!file) {
@@ -123,14 +130,25 @@ export class FileService {
       throw new UnauthorizedException('Invalid file password');
     }
 
-    if (!file.rawData || file.rawData.length === 0) {
-      //TODO proper exception type
-      throw new BadRequestException(
+    if (!file.name) {
+      throw new NotFoundException(
         `File with id ${id} has no raw data to be downloaded`,
       );
     }
 
-    return file.rawData;
+    try {
+      const rawData = await readFile(join(file.path, file.name));
+
+      if (rawData.length === 0) {
+        throw new Error('Empty file');
+      }
+
+      return rawData;
+    } catch {
+      throw new NotFoundException(
+        `File with id ${id} has no raw data to be downloaded`,
+      );
+    }
   }
 
   async findAll(): Promise<GetFileDto[]> {

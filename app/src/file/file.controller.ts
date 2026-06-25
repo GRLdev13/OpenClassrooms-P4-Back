@@ -31,7 +31,7 @@ export class FileController {
   ) {}
 
   @Post('upload')
-  @UseGuards(CookieAuthGuard)
+    @UseGuards(CookieAuthGuard)
   @UseInterceptors(FileIntercepting)
   async uploadFile(
     @Body(FileValidator) body: CreateFileDto,
@@ -89,9 +89,4 @@ export class FileController {
     return this.fileService.deleteById(id);
   }
 
-  // //TODO later: share file with another account.
-  // @Get('share-with')
-  // async shareWith(@Query('id') id: string): Promise<GetFileDto[]> {
-  //   return this.fileService.findByUserId(id);
-  // }
 }
