@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { FILE_RESOURCE_PATH } from './path.resource';
-import { BadRequestException } from '@nestjs/common';
+import { InternalServerErrorException } from '@nestjs/common';
+import { unlink } from 'fs/promises';
 
 export class FileHelper {
   private constructor() {}
@@ -19,9 +20,23 @@ export class FileHelper {
       this.EnsurePath();
       writeFileSync(join(FILE_RESOURCE_PATH, fileName), fileData);
     } catch {
-          throw new BadRequestException(
-                `File ${fileName} Couldn't be saved on disk`,
-              );
+      throw new InternalServerErrorException(
+        `File ${fileName} Couldn't be saved on disk`,
+      );
+    }
+  }
+
+  static DeleteFileAtPath(fileName: string) {
+    const fullfilePath= join(FILE_RESOURCE_PATH, fileName);
+    console.log(fullfilePath);
+    try {
+      if (existsSync(fullfilePath)) {
+        unlink(fullfilePath);
+      }
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Could not delete the file from disk',
+      );
     }
   }
 }

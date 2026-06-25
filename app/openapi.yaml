@@ -1,0 +1,658 @@
+openapi: 3.0.3
+info:
+  title: DataShare API
+  version: 0.0.1
+  description: |
+    NestJS backend API for user authentication, file sharing, file downloads,
+    and tag management.
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+tags:
+  - name: Auth
+    description: Registration and login endpoints.
+  - name: Users
+    description: User lookup and health endpoints.
+  - name: Files
+    description: File upload, listing, link lookup, download, and deletion.
+  - name: Tags
+    description: Tag creation, listing, and deletion.
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session_id
+      description: HTTP-only JWT session cookie returned by login/register endpoints.
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          example: password123
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - passwordConfirmation
+        - firstName
+        - lastName
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: password123
+        passwordConfirmation:
+          type: string
+          format: password
+          minLength: 8
+          example: password123
+        firstName:
+          type: string
+          example: Jane
+        lastName:
+          type: string
+          example: Doe
+    User:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7b4042c1-59f4-4a62-bf32-bb4e6c16532f
+        email:
+          type: string
+          format: email
+          example: user@example.com
+    ConnectedUser:
+      type: object
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - files
+        - picture
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileMetadata'
+        picture:
+          type: string
+          description: Optional user picture encoded as a string.
+    HealthResponse:
+      type: object
+      required:
+        - connected
+        - message
+      properties:
+        connected:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Successfully connected to the database
+    Tag:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: invoice
+    AddTagRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          example: invoice
+    DeleteTagRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+    FileTagInput:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    FileMetadata:
+      type: object
+      required:
+        - id
+        - name
+        - uploadDate
+        - expirationDate
+        - hasExpired
+        - tags
+        - hasPassword
+        - link
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: report.pdf
+        uploadDate:
+          type: string
+          format: date-time
+          nullable: true
+        expirationDate:
+          type: string
+          format: date-time
+          nullable: true
+        hasExpired:
+          type: boolean
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        hasPassword:
+          type: boolean
+        link:
+          type: string
+          nullable: true
+          description: Shareable link token generated from the file id.
+    FileListRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+    FileDownloadRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+        password:
+          type: string
+          nullable: true
+          description: Optional file password when the file is protected.
+    DeleteResponse:
+      type: object
+      required:
+        - deleted
+      properties:
+        deleted:
+          type: boolean
+          example: true
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        error:
+          type: string
+          example: Bad Request
+  responses:
+    BadRequest:
+      description: Invalid request payload.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid session cookie.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Log in a user.
+      description: Authenticates a user and sets the `session_id` HTTP-only cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '201':
+          description: User logged in successfully.
+          headers:
+            Set-Cookie:
+              description: HTTP-only `session_id` cookie.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectedUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user.
+      description: Creates a user account, logs the user in, and sets the `session_id` HTTP-only cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered and logged in successfully.
+          headers:
+            Set-Cookie:
+              description: HTTP-only `session_id` cookie.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectedUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /user/login:
+    post:
+      tags:
+        - Users
+      summary: Log in a user through the user controller.
+      description: Alternative login route using the same authentication service as `/auth/login`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '201':
+          description: User logged in successfully.
+          headers:
+            Set-Cookie:
+              description: HTTP-only `session_id` cookie.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectedUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /user/health:
+    get:
+      tags:
+        - Users
+      summary: Check database connectivity.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Database connectivity status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /user/by-email:
+    get:
+      tags:
+        - Users
+      summary: Find a user by email.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: User found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /user/by-id:
+    get:
+      tags:
+        - Users
+      summary: Find a user by id.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /user/all:
+    get:
+      tags:
+        - Users
+      summary: List all users.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Users found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /file/upload:
+    post:
+      tags:
+        - Files
+      summary: Upload a file.
+      description: Uploads a file, stores it, links it to a user, and returns the current file list.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - FileIntercepting
+                - name
+                - email
+              properties:
+                FileIntercepting:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+                  example: report.pdf
+                extension:
+                  type: string
+                  example: pdf
+                email:
+                  type: string
+                  format: email
+                expirationTimeInDay:
+                  type: integer
+                  default: 0
+                  example: 7
+                password:
+                  type: string
+                  nullable: true
+                  description: Optional file password.
+                uploadDate:
+                  type: string
+                  format: date-time
+                  nullable: true
+                tags:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/FileTagInput'
+                  description: Optional tags. Some clients may need to send this field as JSON text in multipart requests.
+      responses:
+        '201':
+          description: File uploaded successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /file:
+    post:
+      tags:
+        - Files
+      summary: List files for a user email.
+      description: Returns files associated with the provided user email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileListRequest'
+      responses:
+        '201':
+          description: Files found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /file/download:
+    post:
+      tags:
+        - Files
+      summary: Download a file by id.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileDownloadRequest'
+      responses:
+        '201':
+          description: File content.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /file/link/{link}:
+    get:
+      tags:
+        - Files
+      summary: Resolve a generated file link.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: link
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File metadata found for the link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileMetadata'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /file/delete/{id}:
+    delete:
+      tags:
+        - Files
+      summary: Delete a file by id.
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: File deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /tag/add:
+    post:
+      tags:
+        - Tags
+      summary: Add a tag.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTagRequest'
+      responses:
+        '201':
+          description: Tag created or returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /tag/all:
+    get:
+      tags:
+        - Tags
+      summary: List all tags.
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: Tags found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /tag/delete:
+    delete:
+      tags:
+        - Tags
+      summary: Delete a tag.
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteTagRequest'
+      responses:
+        '200':
+          description: Tag deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'

@@ -18,19 +18,16 @@ export class Files extends BaseEntity {
   expirationDate!: Date | null;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
-  name!: string | null;
+  name!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   password!: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  link!: string | null;
+  link!: string;
 
   @Column({ type: 'timestamp', nullable: true })
   uploadDate!: Date | null;
-
-  @Column({ type: 'varchar' })
-  path!: string;
 
   // @Column({ type: 'bytea', nullable: true })
   // rawData!: Buffer | null;

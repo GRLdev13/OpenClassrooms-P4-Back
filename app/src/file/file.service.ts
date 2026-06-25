@@ -52,7 +52,6 @@ export class FileService {
     try {
       const file = new Files();
       file.name = createFileDto.name;
-      file.path = FILE_RESOURCE_PATH;
       // file.rawData = ;
       file.password = createFileDto.password
         ? this.authService.hashPassword(createFileDto.password)
@@ -137,7 +136,7 @@ export class FileService {
     }
 
     try {
-      const rawData = await readFile(join(file.path, file.name));
+      const rawData = await readFile(join(FILE_RESOURCE_PATH, file.name));
 
       if (rawData.length === 0) {
         throw new Error('Empty file');
@@ -162,12 +161,24 @@ export class FileService {
     return this.fileMapper.toDtoArray(user.files.map((x) => x));
   }
 
-  async deleteById(id: string): Promise<{ deleted: boolean }> {
-    const result = await this.fileRepository.delete(id);
+  async deleteById(
+    id: string,
+    deleteBoth = true,
+  ): Promise<{ deleted: boolean }> {
+    const file = await this.fileRepository.findOne({ where: { id } });
 
-    if (!result.affected) {
+    if (!file) {
       throw new NotFoundException(`File with id ${id} not found`);
     }
+
+    if (deleteBoth) {
+      const result = await this.fileRepository.delete(id);
+      if (!result.affected) {
+        throw new NotFoundException(`File with id ${id} not found`);
+      }
+    }
+
+    FileHelper.DeleteFileAtPath(file.name);
 
     return { deleted: true };
   }
