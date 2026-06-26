@@ -132,14 +132,8 @@ export class FileService {
       throw new UnauthorizedException('Invalid file password');
     }
 
-    if (!file.name) {
-      throw new NotFoundException(
-        `File with id ${id} has no raw data to be downloaded`,
-      );
-    }
-
     try {
-      const rawData = await readFile(join(FILE_RESOURCE_PATH, file.name));
+      const rawData = await readFile(join(FILE_RESOURCE_PATH, file.physicalName));
 
       if (rawData.length === 0) {
         throw new Error('Empty file');
