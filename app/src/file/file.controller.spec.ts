@@ -19,12 +19,39 @@ describe('FileController routes', () => {
   let fileService: {
     create: jest.Mock;
     findAll: jest.Mock;
+    findByUserEmail: jest.Mock;
+    downloadFileById: jest.Mock;
+    findById: jest.Mock;
+    deleteById: jest.Mock;
+  };
+  let authService: {
+    revertLink: jest.Mock;
+  };
+
+  const fileId = '54b6af70-8af5-4f3d-bd44-e68f66e91cf7';
+  const fileDto = {
+    id: fileId,
+    name: 'notes.txt',
+    uploadDate: null,
+    expirationDate: null,
+    hasExpired: false,
+    tags: [],
+    hasPassword: false,
+    link: null,
   };
 
   async function createTestApp(guard: CanActivate): Promise<INestApplication> {
     fileService = {
       create: jest.fn(),
       findAll: jest.fn(),
+      findByUserEmail: jest.fn(),
+      downloadFileById: jest.fn(),
+      findById: jest.fn(),
+      deleteById: jest.fn(),
+    };
+
+    authService = {
+      revertLink: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -36,7 +63,7 @@ describe('FileController routes', () => {
         },
         {
           provide: AuthService,
-          useValue: {},
+          useValue: authService,
         },
       ],
     })
@@ -84,7 +111,7 @@ describe('FileController routes', () => {
       .field('extension', '.txt')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('FileIntercepting', uploadedFile, 'notes.txt')
+      .attach(FILE_UPLOAD_FIELD, uploadedFile, 'notes.txt')
       .expect(201);
 
     expect(fileService.create).toHaveBeenCalledWith(
@@ -93,8 +120,8 @@ describe('FileController routes', () => {
         extension: '.txt',
         email: 'user@example.com',
         expirationTimeInDay: '7',
-        rawFile: uploadedFile.toString('base64'),
       }),
+      uploadedFile,
     );
     expect(fileService.findAll).toHaveBeenCalledTimes(1);
     expect(response.body).toEqual(files);
@@ -129,7 +156,7 @@ describe('FileController routes', () => {
       .field('extension', '.txt')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('FileIntercepting', Buffer.from('file contents'), 'notes.txt')
+      .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'notes.txt')
       .expect(401);
 
     expect(fileService.create).not.toHaveBeenCalled();
@@ -145,7 +172,7 @@ describe('FileController routes', () => {
       .field('extension', '.exe')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('FileIntercepting', Buffer.from('file contents'), 'notes.txt')
+      .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'notes.txt')
       .expect(400);
 
     expect(response.body.message).toBe('Invalid file payload');
@@ -167,18 +194,10 @@ describe('FileController routes', () => {
       .field('extension', '.txt')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('FileIntercepting', Buffer.from('file contents'), 'malware.exe')
+      .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'malware.exe')
       .expect(400);
 
-    expect(response.body.message).toBe('Invalid file payload');
-    expect(response.body.errors).toEqual([
-      {
-        property: FILE_UPLOAD_FIELD,
-        constraints: {
-          forbiddenExtension: '.exe files are not allowed',
-        },
-      },
-    ]);
+    expect(response.body.message).toBe('.exe files are not allowed');
     expect(fileService.create).not.toHaveBeenCalled();
   });
 
@@ -187,15 +206,7 @@ describe('FileController routes', () => {
     expect(isAllowedFileSize(MAX_FILE_SIZE_BYTES)).toBe(true);
     expect(isAllowedFileSize(ONE_GIB_IN_BYTES)).toBe(false);
     expect(createFileTooLargeException().getResponse()).toEqual({
-      message: 'Invalid file payload',
-      errors: [
-        {
-          property: FILE_UPLOAD_FIELD,
-          constraints: {
-            maxFileSize: `File size must be less than ${ONE_GIB_IN_BYTES} bytes`,
-          },
-        },
-      ],
+      message: `File size must be less than ${ONE_GIB_IN_BYTES} bytes`,
     });
   });
 
@@ -208,10 +219,97 @@ describe('FileController routes', () => {
       .field('extension', '.txt')
       .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
-      .attach('FileIntercepting', Buffer.from('file contents'), 'notes.txt')
+      .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'notes.txt')
       .expect(201);
 
     expect(fileService.findAll).not.toHaveBeenCalled();
     expect(response.body).toEqual([]);
+  });
+
+  it('POST /file returns files for a user email', async () => {
+    fileService.findByUserEmail.mockResolvedValue([fileDto]);
+
+    const response = await request(app.getHttpServer())
+      .post('/file')
+      .send({ email: 'user@example.com' })
+      .expect(201);
+
+    expect(fileService.findByUserEmail).toHaveBeenCalledWith(
+      'user@example.com',
+    );
+    expect(response.body).toEqual([fileDto]);
+  });
+
+  it('POST /file rejects invalid user email payloads', async () => {
+    await request(app.getHttpServer())
+      .post('/file')
+      .send({ email: 'not-an-email' })
+      .expect(400);
+
+    expect(fileService.findByUserEmail).not.toHaveBeenCalled();
+  });
+
+  it('POST /file/download streams an authenticated file download', async () => {
+    const data = Buffer.from('file contents');
+
+    fileService.downloadFileById.mockResolvedValue(data);
+
+    const response = await request(app.getHttpServer())
+      .post('/file/download')
+      .send({ id: fileId, password: 'secret' })
+      .expect(201);
+
+    expect(fileService.downloadFileById).toHaveBeenCalledWith(fileId, 'secret');
+    expect(response.body).toEqual(data);
+  });
+
+  it('POST /file/download rejects invalid download payloads', async () => {
+    await request(app.getHttpServer())
+      .post('/file/download')
+      .send({ id: 'not-a-uuid' })
+      .expect(400);
+
+    expect(fileService.downloadFileById).not.toHaveBeenCalled();
+  });
+
+  it('POST /file/download/anonymous streams an anonymous file download', async () => {
+    const data = Buffer.from('anonymous contents');
+
+    fileService.downloadFileById.mockResolvedValue(data);
+
+    const response = await request(app.getHttpServer())
+      .post('/file/download/anonymous')
+      .send({ id: fileId })
+      .expect(201);
+
+    expect(fileService.downloadFileById).toHaveBeenCalledWith(
+      fileId,
+      undefined,
+    );
+    expect(response.body).toEqual(data);
+  });
+
+  it('GET /file/link/:link resolves a link and returns the file', async () => {
+    authService.revertLink.mockReturnValue(fileId);
+    fileService.findById.mockResolvedValue(fileDto);
+
+    const response = await request(app.getHttpServer())
+      .get('/file/link/signed-link')
+      .expect(200);
+
+    expect(authService.revertLink).toHaveBeenCalledWith('signed-link');
+    expect(fileService.findById).toHaveBeenCalledWith(fileId);
+    expect(response.body).toEqual(fileDto);
+  });
+
+  it('DELETE /file/delete/:id deletes a file', async () => {
+    fileService.deleteById.mockResolvedValue({ deleted: true });
+
+    const response = await request(app.getHttpServer())
+      .delete(`/file/delete/${fileId}`)
+      .expect(200);
+
+    expect(fileService.deleteById).toHaveBeenCalledWith(fileId);
+    expect(response.body).toEqual({ deleted: true });
   });
 });
