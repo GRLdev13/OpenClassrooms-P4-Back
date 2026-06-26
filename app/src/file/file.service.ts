@@ -58,7 +58,8 @@ export class FileService {
       file.password = createFileDto.password
         ? this.authService.hashPassword(createFileDto.password)
         : null;
-      file.uploadDate = new Date();
+      file.uploadDate =
+        this.toDateOrNull(createFileDto.uploadDate) ?? new Date();
 
       const expirationDate = new Date(
         (file.uploadDate ?? new Date()).getTime(),

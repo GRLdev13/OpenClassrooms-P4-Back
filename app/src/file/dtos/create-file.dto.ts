@@ -1,5 +1,4 @@
 import {
-  IsDate,
   IsDateString,
   IsEmail,
   IsNotEmpty,
@@ -27,6 +26,10 @@ export class CreateFileDto {
   public password?: string | null;
 
   @IsOptional()
+  @IsDateString()
+  public uploadDate?: Date | string | null;
+
+  @IsOptional()
   public tags?: CreateFileTagDto[] = [];
 
   @IsNotEmpty()
@@ -51,6 +54,7 @@ export class CreateFileDto {
     this.rawFile = rawFile;
     this.tags = tags;
     this.password = password;
+    this.uploadDate = uploadDate;
     this.expirationTimeInDay = expirationTimeInDay;
     this.email = email;
   }
