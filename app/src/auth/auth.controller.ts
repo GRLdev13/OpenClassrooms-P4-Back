@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res } from '@nestjs/common';
+import { Body, Controller, Post, Res, ValidationPipe } from '@nestjs/common';
 import type { Response } from 'express';
 import { ConnectedDto } from '../user/dtos/connected.dto';
 import { CreateUserDto } from '../user/dtos/create-user.dto';
@@ -12,7 +12,7 @@ export class AuthController {
 
   @Post('login')
   async login(
-    @Body() request: LoginDto,
+    @Body(new ValidationPipe()) request: LoginDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ConnectedDto> {
     const session = await this.authService.signIn(
@@ -27,7 +27,7 @@ export class AuthController {
 
   @Post('register')
   async create(
-    @Body() request: CreateUserDto,
+    @Body(new ValidationPipe()) request: CreateUserDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ConnectedDto> {
     const session = await this.authService.create(

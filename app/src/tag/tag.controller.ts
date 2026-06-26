@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  UseGuards,
+  ValidationPipe,
+} from '@nestjs/common';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { AddTagDto } from './dtos/add-tag.dto';
 import { DeleteTagDto } from './dtos/delete-tag.dto';
@@ -11,7 +19,7 @@ export class TagController {
   constructor(private readonly tagService: TagService) {}
 
   @Post('add')
-  async add(@Body() request: AddTagDto): Promise<GetTagDto> {
+  async add(@Body(new ValidationPipe()) request: AddTagDto): Promise<GetTagDto> {
     return this.tagService.add(request);
   }
 
@@ -21,7 +29,9 @@ export class TagController {
   }
 
   @Delete('delete')
-  async delete(@Body() request: DeleteTagDto): Promise<{ deleted: boolean }> {
+  async delete(
+    @Body(new ValidationPipe()) request: DeleteTagDto,
+  ): Promise<{ deleted: boolean }> {
     return this.tagService.delete(request.id);
   }
 }

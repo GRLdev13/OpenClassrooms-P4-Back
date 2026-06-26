@@ -1,4 +1,10 @@
+import { IsEmail } from 'class-validator';
 
 export class RequestFileDto {
-  constructor(public email: string) {}
+  @IsEmail()
+  public email: string;
+
+  constructor(email: string) {
+    this.email = email;
+  }
 }

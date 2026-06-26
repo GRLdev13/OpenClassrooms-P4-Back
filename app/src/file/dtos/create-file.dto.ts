@@ -1,5 +1,7 @@
 import {
+  IsDate,
   IsDateString,
+  IsEmail,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -8,38 +10,30 @@ import {
 import { CreateFileTagDto } from './create-file-tag.dto';
 
 export class CreateFileDto {
-  // @IsString()
-  // @IsNotEmpty()
-  @ValidateIf((o) => false)
+  @IsString()
+  @IsNotEmpty()
   public name: string;
 
-  // @IsOptional()
-  @ValidateIf((o) => false)
-  // @IsString()
+  @IsNotEmpty()
+  @IsString()
   public extension?: string;
 
-  // @IsOptional()
+  // Validated elsewhere by the FileInterceptor.
   @ValidateIf((o) => false)
-  // @IsString()
   public rawFile: string;
 
-  // @IsOptional()
-  @ValidateIf((o) => false)
-  // @IsString()
+  @IsOptional()
+  @IsString()
   public password?: string | null;
 
-  // @IsOptional()
-  @ValidateIf((o) => false)
-  // @IsDateString()
-  public uploadDate?: Date | string | null;
-
-  @ValidateIf((o) => false)
+  @IsOptional()
   public tags?: CreateFileTagDto[] = [];
 
-  @ValidateIf((o) => false)
+  @IsNotEmpty()
   public expirationTimeInDay: number = 0;
 
-  @ValidateIf((o) => false)
+  @IsEmail()
+  @IsNotEmpty()
   public email: string;
 
   constructor(
@@ -48,7 +42,7 @@ export class CreateFileDto {
     rawFile: string = '',
     tags: CreateFileTagDto[] = [],
     password?: string | null,
-    uploadDate?: Date | string | null,
+    uploadDate?: Date | string,
     expirationTimeInDay: number = 0,
     email: string = '',
   ) {
@@ -57,7 +51,6 @@ export class CreateFileDto {
     this.rawFile = rawFile;
     this.tags = tags;
     this.password = password;
-    this.uploadDate = uploadDate;
     this.expirationTimeInDay = expirationTimeInDay;
     this.email = email;
   }

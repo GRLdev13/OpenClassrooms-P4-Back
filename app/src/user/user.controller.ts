@@ -6,6 +6,7 @@ import {
   Query,
   Res,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { setAuthCookie } from '../auth/auth-cookie';
@@ -57,7 +58,7 @@ export class UserController {
 
   @Post('login')
   async login(
-    @Body() connectRequest: LoginUserDto,
+    @Body(new ValidationPipe()) connectRequest: LoginUserDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ConnectedDto> {
     const session = await this.authService.signIn(

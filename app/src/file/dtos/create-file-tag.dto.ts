@@ -1,4 +1,11 @@
+import { IsNotEmpty, IsOptional, IsString, IsUUID, ValidateIf } from 'class-validator';
+
 export class CreateFileTagDto {
-  public id: string = "";
-  public name: string = "";
+  @IsUUID()
+  @IsNotEmpty()
+  public id!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  public name!: string;
 }

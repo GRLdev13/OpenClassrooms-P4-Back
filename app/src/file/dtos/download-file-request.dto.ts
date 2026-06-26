@@ -2,7 +2,7 @@ import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class DownloadFileRequestDto {
   @IsUUID()
-  public id: string = "";
+  public id: string = '';
 
   @IsOptional()
   @IsString()

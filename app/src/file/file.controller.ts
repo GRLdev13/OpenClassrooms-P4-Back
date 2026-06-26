@@ -11,6 +11,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CreateFileDto } from './dtos/create-file.dto';
 import { DownloadFileRequestDto } from './dtos/download-file-request.dto';
@@ -38,7 +39,6 @@ export class FileController {
     @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
     file: Express.Multer.File,
   ): Promise<GetFileDto[]> {
-
     performance.mark('upload-start');
 
     //TODO: change in file stream
@@ -46,8 +46,11 @@ export class FileController {
       ...body,
     };
 
-    let isFileCreated = await this.fileService.create(createFileDto, file.buffer);
-    
+    let isFileCreated = await this.fileService.create(
+      createFileDto,
+      file.buffer,
+    );
+
     performance.mark('upload-end');
     performance.measure('download endpoint', 'upload-start', 'upload-end');
 
@@ -60,14 +63,29 @@ export class FileController {
 
   @Post('')
   @UseGuards(CookieAuthGuard)
-  async findByUserId(@Body() request: RequestFileDto): Promise<GetFileDto[]> {
+  async findByUserId(
+    @Body(new ValidationPipe()) request: RequestFileDto,
+  ): Promise<GetFileDto[]> {
     return this.fileService.findByUserEmail(request.email);
   }
 
   @Post('download')
   @UseGuards(CookieAuthGuard)
   async downloadById(
-    @Body() request: DownloadFileRequestDto,
+    @Body(new ValidationPipe()) request: DownloadFileRequestDto,
+  ): Promise<StreamableFile> {
+    const dataFile = await this.fileService.downloadFileById(
+      request.id,
+      request?.password,
+    );
+
+    return new StreamableFile(dataFile);
+  }
+
+  //Optionnal anonymous download route
+  @Post('download/anonymous')
+  async anonDownloadById(
+    @Body(new ValidationPipe()) request: DownloadFileRequestDto,
   ): Promise<StreamableFile> {
     const dataFile = await this.fileService.downloadFileById(
       request.id,

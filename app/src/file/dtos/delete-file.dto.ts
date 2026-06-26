@@ -1,3 +1,10 @@
+import { IsUUID } from 'class-validator';
+
 export class DeleteFileDto {
-  constructor(public id: string) {}
+  @IsUUID()
+  public id: string;
+
+  constructor(id: string) {
+    this.id = id;
+  }
 }

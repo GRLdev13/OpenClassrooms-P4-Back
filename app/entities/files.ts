@@ -14,8 +14,8 @@ export class Files extends BaseEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  expirationDate!: Date | null;
+  @Column({ type: 'timestamp', nullable: false })
+  expirationDate!: Date;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   name!: string;
@@ -29,13 +29,9 @@ export class Files extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   link!: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  uploadDate!: Date | null;
+  @Column({ type: 'timestamp', nullable: false })
+  uploadDate!: Date;
 
-  // @Column({ type: 'bytea', nullable: true })
-  // rawData!: Buffer | null;
-
-  // Relationships
   @ManyToOne(() => User, (user) => user.files)
   user!: User;
 
