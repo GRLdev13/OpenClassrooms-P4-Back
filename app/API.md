@@ -76,7 +76,7 @@ Fields:
 - `expirationTimeInDay`: number of days before expiration.
 - `password`: optional file password.
 - `uploadDate`: optional upload date.
-- `tags`: optional tags.
+- `tags`: optional tags in an array.
 
 Main behavior:
 

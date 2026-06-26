@@ -4,7 +4,7 @@
 
 This API is a NestJS backend for a small file sharing application. It lets users create an account, log in, upload files, and later access file metadata or download protected files.
 
-The application uses PostgreSQL through TypeORM. The main domain entities are users, files, tags, and the join tables that link files to users and tags.
+The application uses PostgreSQL through TypeORM. The main domain entities are users, files, tags, and the join tables that links users and tags.
 
 ## Main Modules
 
@@ -13,15 +13,6 @@ The application uses PostgreSQL through TypeORM. The main domain entities are us
 - `FileModule`: handles file upload, file listing, file download, generated file links, deletion, passwords, expiration dates, and tags.
 - `TagModule`: manages reusable tags that can be attached to uploaded files.
 
-## Testing
+## Code Structure
 
-The project uses Jest for unit and route-level tests.
-
-Current coverage focuses on:
-
-- Auth registration and login behavior.
-- Cookie creation.
-- File upload route behavior.
-- File upload service behavior such as validation, password hashing, tags, and expiration dates.
-
-DTO files are excluded from coverage calculation through the Jest `collectCoverageFrom` configuration.
+The code is structured around the MVC pattern, splitting responsabilities between components, enforcing SOLID principles, code clarity, easy testing and debugging.
