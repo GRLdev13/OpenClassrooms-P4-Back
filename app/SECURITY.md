@@ -57,14 +57,13 @@ This protects file passwords if the database is leaked, but it does not encrypt 
 
 ## File Content Storage
 
-Uploaded file content is stored in PostgreSQL as binary data (`bytea`).
+The content of the uploaded files is stored on the host machine in a default public folder (`c:/home/datashare/files`).
+The folder's path is given by using the primitive: process.env.USERPROFILE or homedir().
 
-The API converts the uploaded file buffer to base64 during request handling, then converts it back to a binary buffer before saving it.
+The frontend sends a binary array, which the API then saves to the default defined path.
 
-Important limitation:
+The file names and their extensions are obfuscated on the local system, but their content is not.
 
-- File content is stored as data, not encrypted application-side.
-- Anyone with database-level access may be able to read file contents unless database/storage encryption is configured outside the app.
 
 Possible improvement:
 
