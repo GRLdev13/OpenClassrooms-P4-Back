@@ -36,16 +36,14 @@ export class FileService {
   async create(
     createFileDto: CreateFileDto,
     fileBuffer: Buffer,
+    email: string
   ): Promise<boolean> {
     if (createFileDto == null || !fileBuffer || !Buffer.isBuffer(fileBuffer)) {
       throw new BadRequestException(`File payload is required`);
     }
 
-    if (!createFileDto.email) {
-      throw new BadRequestException(`File user reference is required`);
-    }
 
-    let user = await this.userService.findByEmail(createFileDto.email);
+    let user = await this.userService.findByEmail(email);
 
     if (!user) {
       throw new BadRequestException(`User not found somehow`);

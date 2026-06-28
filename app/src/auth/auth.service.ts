@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
+import type { Request } from 'express';
 import { ConnectedDto } from '../user/dtos/connected.dto';
 import { UserMapper } from '../user/user.mapper';
 import { UserService } from '../user/user.service';
+import { AUTH_COOKIE_NAME } from './auth-cookie';
 
 const jwtSecret = process.env.JWT_SECRET;
 
@@ -23,6 +25,10 @@ export const jwtConstants = {
 export interface AuthenticatedSession {
   user: ConnectedDto;
   sessionCookie: string;
+}
+
+interface SessionPayload {
+  sub?: unknown;
 }
 
 @Injectable()
@@ -102,6 +108,32 @@ export class AuthService {
 
     try {
       await this.jwtService.verifyAsync(sessionCookie);
+    } catch {
+      throw new UnauthorizedException(
+        'Authentication cookie is invalid or expired',
+      );
+    }
+  }
+
+  async getSecuredEmail(request: Request): Promise<string> {
+    const sessionCookie = request.cookies?.[AUTH_COOKIE_NAME] as
+      | string
+      | undefined;
+
+    if (!sessionCookie) {
+      throw new UnauthorizedException('Authentication cookie is required');
+    }
+
+    try {
+      const payload = await this.jwtService.verifyAsync<SessionPayload>(
+        sessionCookie,
+      );
+
+      if (typeof payload.sub !== 'string' || !payload.sub) {
+        throw new Error('Missing email subject');
+      }
+
+      return payload.sub;
     } catch {
       throw new UnauthorizedException(
         'Authentication cookie is invalid or expired',

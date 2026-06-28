@@ -35,10 +35,6 @@ export class CreateFileDto {
   @IsNotEmpty()
   public expirationTimeInDay: number = 0;
 
-  @IsEmail()
-  @IsNotEmpty()
-  public email: string;
-
   constructor(
     name: string = '',
     extension?: string,
@@ -56,6 +52,5 @@ export class CreateFileDto {
     this.password = password;
     this.uploadDate = uploadDate;
     this.expirationTimeInDay = expirationTimeInDay;
-    this.email = email;
   }
 }
