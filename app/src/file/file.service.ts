@@ -42,6 +42,9 @@ export class FileService {
       throw new BadRequestException(`File payload is required`);
     }
 
+    if (!email) {
+      throw new BadRequestException(`File user reference is required`);
+    }
 
     let user = await this.userService.findByEmail(email);
 

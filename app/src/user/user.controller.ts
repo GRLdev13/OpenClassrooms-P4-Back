@@ -9,7 +9,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { setAuthCookie } from '../auth/auth-cookie';
+import { AUTH_COOKIE_NAME, setAuthCookie } from '../auth/auth-cookie';
 import { CookieAuthGuard } from '../auth/guards/cookie-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { ConnectedDto } from './dtos/connected.dto';
@@ -69,5 +69,17 @@ export class UserController {
     setAuthCookie(response, session.sessionCookie);
 
     return session.user;
+  }
+
+  @Post('logout')
+  logout(@Res({ passthrough: true }) response: Response) {
+    // Clear the specific cookie by its name
+    response.clearCookie(AUTH_COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    return { message: 'Logged out successfully, cookie cleared' };
   }
 }
