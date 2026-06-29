@@ -8,6 +8,7 @@ import { Tag } from '../entities/tag';
 import { FileTag } from '../entities/file-tag';
 import { AuthModule } from './auth/auth.module';
 import { TagModule } from './tag/tag.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -23,6 +24,9 @@ import { TagModule } from './tag/tag.module';
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV !== 'production',
     }),
+    PrometheusModule.register({
+    path: '/metrics', 
+  }),
     FileModule,
     UserModule,
     AuthModule,
