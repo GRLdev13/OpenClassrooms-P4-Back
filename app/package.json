@@ -25,9 +25,11 @@
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/typeorm": "^11.0.0",
+    "@willsoto/nestjs-prometheus": "^6.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "pg": "^8.13.1",
+    "prom-client": "^15.1.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "typeorm": "^0.3.20"
@@ -52,6 +54,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^17.0.0",
     "jest": "^30.4.2",
+    "jest-html-reporter": "^4.4.0",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
@@ -73,8 +76,14 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!**/*.dto.ts",
+      "!**/*.module.ts",
+      "!**/file.mapper.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
