@@ -26,6 +26,7 @@ describe('FileController routes', () => {
   };
   let authService: {
     revertLink: jest.Mock;
+    getSecuredEmail: jest.Mock;
   };
 
   const fileId = '54b6af70-8af5-4f3d-bd44-e68f66e91cf7';
@@ -52,6 +53,7 @@ describe('FileController routes', () => {
 
     authService = {
       revertLink: jest.fn(),
+      getSecuredEmail: jest.fn().mockResolvedValue('user@example.com'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -109,7 +111,6 @@ describe('FileController routes', () => {
       .post('/file/upload')
       .field('name', 'notes.txt')
       .field('extension', '.txt')
-      .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
       .attach(FILE_UPLOAD_FIELD, uploadedFile, 'notes.txt')
       .expect(201);
@@ -118,10 +119,10 @@ describe('FileController routes', () => {
       expect.objectContaining({
         name: 'notes.txt',
         extension: '.txt',
-        email: 'user@example.com',
         expirationTimeInDay: '7',
       }),
       uploadedFile,
+      'user@example.com',
     );
     expect(fileService.findAll).toHaveBeenCalledTimes(1);
     expect(response.body).toEqual(files);
@@ -132,7 +133,6 @@ describe('FileController routes', () => {
       .post('/file/upload')
       .field('name', 'notes.txt')
       .field('extension', '.txt')
-      .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
       .expect(400);
 
@@ -154,7 +154,6 @@ describe('FileController routes', () => {
       .post('/file/upload')
       .field('name', 'notes.txt')
       .field('extension', '.txt')
-      .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
       .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'notes.txt')
       .expect(401);
@@ -170,7 +169,6 @@ describe('FileController routes', () => {
       .post('/file/upload')
       .field('name', 'malware.exe')
       .field('extension', '.exe')
-      .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
       .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'notes.txt')
       .expect(400);
@@ -192,7 +190,6 @@ describe('FileController routes', () => {
       .post('/file/upload')
       .field('name', 'malware')
       .field('extension', '.txt')
-      .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
       .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'malware.exe')
       .expect(400);
@@ -217,7 +214,6 @@ describe('FileController routes', () => {
       .post('/file/upload')
       .field('name', 'notes.txt')
       .field('extension', '.txt')
-      .field('email', 'user@example.com')
       .field('expirationTimeInDay', '7')
       .attach(FILE_UPLOAD_FIELD, Buffer.from('file contents'), 'notes.txt')
       .expect(201);
@@ -226,25 +222,29 @@ describe('FileController routes', () => {
     expect(response.body).toEqual([]);
   });
 
-  it('POST /file returns files for a user email', async () => {
+  it('GET /file/files returns files for the secured user email', async () => {
+    authService.getSecuredEmail.mockResolvedValue('secured@example.com');
     fileService.findByUserEmail.mockResolvedValue([fileDto]);
 
     const response = await request(app.getHttpServer())
-      .post('/file')
-      .send({ email: 'user@example.com' })
-      .expect(201);
+      .get('/file/files')
+      .expect(200);
 
+    expect(authService.getSecuredEmail).toHaveBeenCalledTimes(1);
     expect(fileService.findByUserEmail).toHaveBeenCalledWith(
-      'user@example.com',
+      'secured@example.com',
     );
     expect(response.body).toEqual([fileDto]);
   });
 
-  it('POST /file rejects invalid user email payloads', async () => {
+  it('GET /file/files rejects invalid secured cookies', async () => {
+    authService.getSecuredEmail.mockRejectedValue(
+      new UnauthorizedException('Authentication cookie is invalid or expired'),
+    );
+
     await request(app.getHttpServer())
-      .post('/file')
-      .send({ email: 'not-an-email' })
-      .expect(400);
+      .get('/file/files')
+      .expect(401);
 
     expect(fileService.findByUserEmail).not.toHaveBeenCalled();
   });

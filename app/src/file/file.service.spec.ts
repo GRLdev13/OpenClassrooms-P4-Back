@@ -47,6 +47,7 @@ describe('FileService upload creation', () => {
 
   const fileId = '54b6af70-8af5-4f3d-bd44-e68f66e91cf7';
   const futureDate = () => new Date(Date.now() + 60_000);
+  const userEmail = 'user@example.com';
   const fileEntity = (overrides: Partial<Files> = {}): Files =>
     ({
       id: fileId,
@@ -69,7 +70,6 @@ describe('FileService upload creation', () => {
       uploadDate: undefined,
       tags: [],
       expirationTimeInDay: 7,
-      email: 'user@example.com',
       ...overrides,
     }) as CreateFileDto;
 
@@ -150,7 +150,7 @@ describe('FileService upload creation', () => {
 
   it('rejects missing user email references', async () => {
     await expect(
-      service.create(validDto({ email: '' }), fileBuffer),
+      service.create(validDto(), fileBuffer, ''),
     ).rejects.toThrow(new BadRequestException('File user reference is required'));
 
     expect(userService.findByEmail).not.toHaveBeenCalled();
@@ -160,7 +160,7 @@ describe('FileService upload creation', () => {
   it('rejects missing users', async () => {
     userService.findByEmail.mockResolvedValue(null);
 
-    await expect(service.create(validDto(), fileBuffer)).rejects.toThrow(
+    await expect(service.create(validDto(), fileBuffer, userEmail)).rejects.toThrow(
       new BadRequestException('User not found somehow'),
     );
 
@@ -168,7 +168,7 @@ describe('FileService upload creation', () => {
   });
 
   it('saves the uploaded file, generates a link, and links it to the user', async () => {
-    await expect(service.create(validDto(), fileBuffer)).resolves.toBe(true);
+    await expect(service.create(validDto(), fileBuffer, userEmail)).resolves.toBe(true);
 
     expect(userService.findByEmail).toHaveBeenCalledWith('user@example.com');
     expect(fileRepository.manager.transaction).toHaveBeenCalledTimes(1);
@@ -187,7 +187,7 @@ describe('FileService upload creation', () => {
   });
 
   it('stores a hashed password when an upload password is provided', async () => {
-    await service.create(validDto({ password: 'secret123' }), fileBuffer);
+    await service.create(validDto({ password: 'secret123' }), fileBuffer, userEmail);
 
     const savedFile = manager.save.mock.calls.find(
       ([target]) => target === Files,
@@ -208,6 +208,7 @@ describe('FileService upload creation', () => {
         ]),
       }),
       fileBuffer,
+      userEmail,
     );
 
     const fileTagSaves = manager.save.mock.calls.filter(
@@ -225,6 +226,7 @@ describe('FileService upload creation', () => {
         expirationTimeInDay: 7,
       }),
       fileBuffer,
+      userEmail,
     );
 
     const savedFile = manager.save.mock.calls.find(
@@ -241,18 +243,18 @@ describe('FileService upload creation', () => {
 
   it('rejects invalid upload dates', async () => {
     await expect(
-      service.create(validDto({ uploadDate: 'not-a-date' }), fileBuffer),
+      service.create(validDto({ uploadDate: 'not-a-date' }), fileBuffer, userEmail),
     ).rejects.toThrow(BadRequestException);
 
     await expect(
-      service.create(validDto({ uploadDate: 'not-a-date' }), fileBuffer),
+      service.create(validDto({ uploadDate: 'not-a-date' }), fileBuffer, userEmail),
     ).rejects.toThrow('Invalid date format');
   });
 
   it('wraps transaction failures during creation', async () => {
     fileRepository.manager.transaction.mockRejectedValue(new Error('db failed'));
 
-    await expect(service.create(validDto(), fileBuffer)).rejects.toThrow(
+    await expect(service.create(validDto(), fileBuffer, userEmail)).rejects.toThrow(
       'File failed samer: Error: db failed',
     );
   });
@@ -465,19 +467,20 @@ describe('FileService upload creation', () => {
           ],
         }),
         fileBuffer,
+        userEmail,
       ),
     ).resolves.toBe(true);
 
     await expect(
-      service.create(validDto({ tags: ['   '] }), fileBuffer),
+      service.create(validDto({ tags: ['   '] }), fileBuffer, userEmail),
     ).rejects.toThrow('Tag at index 0 is empty');
 
     await expect(
-      service.create(validDto({ tags: [{} as never] }), fileBuffer),
+      service.create(validDto({ tags: [{} as never] }), fileBuffer, userEmail),
     ).rejects.toThrow('Tag at index 0 must have an id or name');
 
     await expect(
-      service.create(validDto({ tags: [123 as never] }), fileBuffer),
+      service.create(validDto({ tags: [123 as never] }), fileBuffer, userEmail),
     ).rejects.toThrow('Invalid tag at index 0');
 
     await expect(
@@ -491,21 +494,22 @@ describe('FileService upload creation', () => {
           ],
         }),
         fileBuffer,
+        userEmail,
       ),
     ).rejects.toThrow('Each tag must have a valid id or name');
   });
 
   it('handles empty, plain-string, and duplicate existing tag inputs', async () => {
     await expect(
-      service.create(validDto({ tags: undefined }), fileBuffer),
+      service.create(validDto({ tags: undefined }), fileBuffer, userEmail),
     ).resolves.toBe(true);
 
     await expect(
-      service.create(validDto({ tags: '' as never }), fileBuffer),
+      service.create(validDto({ tags: '' as never }), fileBuffer, userEmail),
     ).resolves.toBe(true);
 
     await expect(
-      service.create(validDto({ tags: 'Solo' as never }), fileBuffer),
+      service.create(validDto({ tags: 'Solo' as never }), fileBuffer, userEmail),
     ).resolves.toBe(true);
 
     tagRepository.findOne.mockResolvedValue({
@@ -528,6 +532,7 @@ describe('FileService upload creation', () => {
           ],
         }),
         fileBuffer,
+        userEmail,
       ),
     ).resolves.toBe(true);
   });

@@ -194,6 +194,25 @@ describe('UserController routes', () => {
     expect(authService.signIn).not.toHaveBeenCalled();
   });
 
+  it('POST /user/logout clears the authentication cookie', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/user/logout')
+      .set('Cookie', [`${AUTH_COOKIE_NAME}=signed-session-token`])
+      .expect(201);
+
+    const clearCookieHeader = response.headers['set-cookie']?.find(
+      (cookie: string) => cookie.startsWith(`${AUTH_COOKIE_NAME}=`),
+    );
+
+    expect(response.body).toEqual({
+      message: 'Logged out successfully, cookie cleared',
+    });
+    expect(clearCookieHeader).toBeDefined();
+    expect(clearCookieHeader).toContain(`${AUTH_COOKIE_NAME}=`);
+    expect(clearCookieHeader).toMatch(/Expires=Thu, 01 Jan 1970 00:00:00 GMT/);
+    expect(clearCookieHeader).toContain('HttpOnly');
+  });
+
   it('rejects unauthenticated protected user requests', async () => {
     await app.close();
     app = await createTestApp({
